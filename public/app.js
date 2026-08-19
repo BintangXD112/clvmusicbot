@@ -2,6 +2,7 @@
 let currentBotsData = [];
 let logEntries = [];
 let activeLogLevel = 'ALL';
+let previousBotsStatuses = {};
 
 // Initialize Dashboard
 document.addEventListener('DOMContentLoaded', () => {
@@ -14,6 +15,15 @@ document.addEventListener('DOMContentLoaded', () => {
   checkAuthSession();
   initSSE();
   fetchData();
+
+  // Request Notification permission on first user click
+  if (typeof Notification !== 'undefined' && Notification.permission === 'default') {
+    document.addEventListener('click', () => {
+      if (Notification.permission === 'default') {
+        Notification.requestPermission();
+      }
+    }, { once: true });
+  }
 
   // Backup poll every 5s if SSE disconnects
   setInterval(() => {
@@ -190,6 +200,17 @@ function updateBotsSection(bots) {
   if (!Array.isArray(bots)) return;
   currentBotsData = bots;
 
+  // Check for status changes (Online -> Error/Disconnected)
+  bots.forEach((bot, idx) => {
+    const prevStatus = previousBotsStatuses[idx];
+    if (prevStatus !== undefined && prevStatus !== bot.status) {
+      if (bot.status === 'Error' || bot.status === 'Disconnected') {
+        triggerWarningAlert(bot.name, bot.status);
+      }
+    }
+    previousBotsStatuses[idx] = bot.status;
+  });
+
   const onlineCount = bots.filter(b => b.status === 'Online').length;
   const inVcCount = bots.filter(b => b.connectedChannelId).length;
 
@@ -249,6 +270,7 @@ function updateBotsSection(bots) {
             <span><i class="fa-solid fa-bolt"></i> ${bot.ping ? bot.ping + ' ms' : '--'}</span>
           </div>
           ${bot.targetUserId ? `<div class="vc-detail-row text-cyan" style="font-size:0.78rem"><span><i class="fa-solid fa-user-gear"></i> Follow: ${esc(bot.targetUserId)}</span></div>` : ''}
+          ${isOnline && bot.presenceText ? `<div class="vc-detail-row text-success" style="font-size:0.78rem"><span><i class="fa-solid fa-eye"></i> ${esc(bot.presenceType)}: "${esc(bot.presenceText)}"</span></div>` : ''}
         </div>
         <div class="bot-action-bar">
           <button class="btn btn-sm btn-primary" onclick="openMoveModal(${idx})" ${!isOnline ? 'disabled' : ''}><i class="fa-solid fa-arrow-right-to-city"></i> Pindah VC</button>
@@ -300,11 +322,28 @@ async function confirmMoveChannel() {
   const channelId = document.getElementById('channel-select').value;
   if (!channelId) { showToast('Pilih Voice Channel dahulu!', 'warn'); return; }
   closeModal('move-channel-modal');
-  showToast('Memindahkan bot...', 'info');
-  const res = await fetch(`/api/bots/${botIdx}/move`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ voiceChannelId: channelId }) });
-  const data = await res.json();
-  showToast(res.ok ? data.message : data.error, res.ok ? 'success' : 'error');
-  if (res.ok) fetchData();
+  
+  if (botIdx === 'bulk') {
+    showToast('Memindahkan semua bot...', 'info');
+    try {
+      const res = await fetch(`/api/bots/bulk/move`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ voiceChannelId: channelId })
+      });
+      const data = await res.json();
+      showToast(res.ok ? data.message : data.error, res.ok ? 'success' : 'error');
+      if (res.ok) fetchData();
+    } catch (e) {
+      showToast('Kesalahan jaringan saat memindahkan semua bot', 'error');
+    }
+  } else {
+    showToast('Memindahkan bot...', 'info');
+    const res = await fetch(`/api/bots/${botIdx}/move`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ voiceChannelId: channelId }) });
+    const data = await res.json();
+    showToast(res.ok ? data.message : data.error, res.ok ? 'success' : 'error');
+    if (res.ok) fetchData();
+  }
 }
 
 async function toggleVoiceState(botIdx, action) {
@@ -336,10 +375,12 @@ async function restartAllBots() {
 function openAddBotModal() {
   document.getElementById('modal-config-title').innerText = 'Tambah Bot Discord Baru';
   document.getElementById('config-bot-index').value = -1;
-  ['cfg-name', 'cfg-token', 'cfg-guild', 'cfg-vc', 'cfg-target-user'].forEach(id => {
+  ['cfg-name', 'cfg-token', 'cfg-guild', 'cfg-vc', 'cfg-target-user', 'cfg-presence-text'].forEach(id => {
     const el = document.getElementById(id);
     if (el) el.value = '';
   });
+  const presenceType = document.getElementById('cfg-presence-type');
+  if (presenceType) presenceType.value = 'WATCHING';
   const allowMove = document.getElementById('cfg-allow-move');
   if (allowMove) allowMove.checked = true;
   openModal('bot-config-modal');
@@ -356,6 +397,8 @@ function openEditBotModal(idx) {
   document.getElementById('cfg-vc').value = bot.defaultVoiceChannelId || '';
   document.getElementById('cfg-target-user').value = bot.targetUserId || '';
   document.getElementById('cfg-allow-move').checked = bot.allowMove !== false;
+  document.getElementById('cfg-presence-type').value = bot.presenceType || 'WATCHING';
+  document.getElementById('cfg-presence-text').value = bot.presenceText || '';
   openModal('bot-config-modal');
 }
 
@@ -367,7 +410,9 @@ async function saveBotConfig() {
     guildId: document.getElementById('cfg-guild').value.trim(),
     voiceChannelId: document.getElementById('cfg-vc').value.trim(),
     targetUserId: document.getElementById('cfg-target-user').value.trim() || null,
-    allowMove: document.getElementById('cfg-allow-move').checked
+    allowMove: document.getElementById('cfg-allow-move').checked,
+    presenceType: document.getElementById('cfg-presence-type').value,
+    presenceText: document.getElementById('cfg-presence-text').value.trim()
   };
   if (!payload.name || !payload.guildId || !payload.voiceChannelId) {
     showToast('Nama, Guild ID, dan Voice Channel ID wajib diisi!', 'warn'); return;
@@ -534,5 +579,129 @@ async function saveSettings() {
   } catch (e) {
     showToast('Kesalahan jaringan', 'error');
   }
+}
+
+// =============================================================
+// Bulk Actions and Alert Utilities
+// =============================================================
+async function bulkToggleVoiceState(action) {
+  if (!confirm(`Jalankan aksi "${action}" untuk SEMUA bot yang sedang online?`)) return;
+  showToast(`Mengirim perintah massal...`, 'info');
+  try {
+    const res = await fetch(`/api/bots/bulk/voice-state`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action })
+    });
+    const data = await res.json();
+    showToast(res.ok ? data.message : data.error, res.ok ? 'success' : 'error');
+    if (res.ok) fetchData();
+  } catch (e) {
+    showToast('Kesalahan jaringan saat melakukan aksi massal', 'error');
+  }
+}
+
+async function openBulkMoveModal() {
+  document.getElementById('move-bot-index').value = 'bulk';
+  const select = document.getElementById('channel-select');
+  const statusMsg = document.getElementById('channel-load-status');
+  select.innerHTML = '<option value="">-- Memuat... --</option>';
+  statusMsg.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Mengambil channel dari bot pertama...';
+  openModal('move-channel-modal');
+  
+  if (currentBotsData.length === 0) {
+    select.innerHTML = '<option value="">Tidak ada bot terdaftar</option>';
+    statusMsg.innerHTML = '<span class="text-danger">Tambahkan bot terlebih dahulu.</span>';
+    return;
+  }
+
+  // Find the first online bot to fetch channels from (since they must be in the same guild or we fetch from bot index 0)
+  const firstOnlineBotIdx = currentBotsData.findIndex(b => b.status === 'Online');
+  const targetIdx = firstOnlineBotIdx !== -1 ? firstOnlineBotIdx : 0;
+  
+  try {
+    const res = await fetch(`/api/bots/${targetIdx}/channels`);
+    const channels = await res.json();
+    if (res.ok && Array.isArray(channels)) {
+      select.innerHTML = channels.map(ch =>
+        `<option value="${ch.id}">🔊 ${esc(ch.name)} (${ch.memberCount || 0})</option>`
+      ).join('');
+      statusMsg.innerHTML = `<span class="text-success"><i class="fa-solid fa-check"></i> ${channels.length} channel ditemukan (via Bot #${targetIdx + 1}).</span>`;
+    } else {
+      select.innerHTML = '<option value="">Gagal memuat channel</option>';
+      statusMsg.innerHTML = `<span class="text-danger">${channels.error || 'Gagal'}</span>`;
+    }
+  } catch (e) {
+    statusMsg.innerHTML = '<span class="text-danger">Gagal terhubung ke API</span>';
+  }
+}
+
+function triggerWarningAlert(botName, botStatus) {
+  // 1. Desktop Browser Notification
+  if (typeof Notification !== 'undefined' && Notification.permission === 'granted') {
+    new Notification('Peringatan Bot AFK!', {
+      body: `Bot "${botName}" sekarang berstatus: ${botStatus}. Silakan periksa koneksi!`,
+      icon: 'https://cdn.discordapp.com/embed/avatars/0.png'
+    });
+  }
+  
+  // 2. Synthesize Warning Beep using Web Audio API
+  playWarningBeep();
+}
+
+function playWarningBeep() {
+  try {
+    const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    
+    // First high tone beep
+    const osc1 = audioCtx.createOscillator();
+    const gain1 = audioCtx.createGain();
+    osc1.type = 'sine';
+    osc1.frequency.setValueAtTime(880, audioCtx.currentTime); // A5 note
+    gain1.gain.setValueAtTime(0.08, audioCtx.currentTime);
+    gain1.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.25);
+    osc1.connect(gain1);
+    gain1.connect(audioCtx.destination);
+    osc1.start();
+    osc1.stop(audioCtx.currentTime + 0.25);
+    
+    // Second high tone beep (slightly delayed)
+    setTimeout(() => {
+      const osc2 = audioCtx.createOscillator();
+      const gain2 = audioCtx.createGain();
+      osc2.type = 'sine';
+      osc2.frequency.setValueAtTime(880, audioCtx.currentTime);
+      gain2.gain.setValueAtTime(0.08, audioCtx.currentTime);
+      gain2.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.25);
+      osc2.connect(gain2);
+      gain2.connect(audioCtx.destination);
+      osc2.start();
+      osc2.stop(audioCtx.currentTime + 0.25);
+    }, 300);
+  } catch (err) {
+    console.error('Audio warning warning beep failed:', err);
+  }
+}
+
+function exportLogs() {
+  if (!logEntries || logEntries.length === 0) {
+    showToast('Tidak ada log untuk diekspor', 'warn');
+    return;
+  }
+  const text = logEntries.map(e => {
+    const time = new Date(e.timestamp).toISOString();
+    return `[${time}] [${e.level.toUpperCase()}] [${e.tag}]: ${e.message} ${e.extra || ''}`;
+  }).join('\n');
+  
+  const blob = new Blob([text], { type: 'text/plain;charset=utf-8' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `bot_logs_${new Date().toISOString().slice(0,10)}.txt`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+  showToast('Log berhasil diekspor dan diunduh!', 'success');
 }
 

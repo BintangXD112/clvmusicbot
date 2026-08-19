@@ -139,6 +139,33 @@
       </div>
     </section>
 
+    <!-- Bulk Actions Section -->
+    <section class="section-container">
+      <div class="section-header">
+        <h2><i class="fa-solid fa-layer-group"></i> Bulk Actions (Aksi Massal)</h2>
+      </div>
+      <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+        <button class="btn btn-secondary" onclick="bulkToggleVoiceState('mute')">
+          <i class="fa-solid fa-microphone-slash"></i> Mute All
+        </button>
+        <button class="btn btn-secondary" onclick="bulkToggleVoiceState('unmute')">
+          <i class="fa-solid fa-microphone"></i> Unmute All
+        </button>
+        <button class="btn btn-secondary" onclick="bulkToggleVoiceState('deafen')">
+          <i class="fa-solid fa-headphones-simple"></i> Deafen All
+        </button>
+        <button class="btn btn-secondary" onclick="bulkToggleVoiceState('undeafen')">
+          <i class="fa-solid fa-headphones"></i> Undeafen All
+        </button>
+        <button class="btn btn-secondary" onclick="bulkToggleVoiceState('reconnect')">
+          <i class="fa-solid fa-arrows-rotate"></i> Reconnect All
+        </button>
+        <button class="btn btn-primary" onclick="openBulkMoveModal()">
+          <i class="fa-solid fa-arrow-right-to-city"></i> Bulk Move VC
+        </button>
+      </div>
+    </section>
+
     <!-- Bot Instances Section -->
     <section class="section-container">
       <div class="section-header">
@@ -169,6 +196,9 @@
             <button class="filter-btn text-danger" data-level="ERROR" onclick="filterLogs('ERROR')">Error</button>
           </div>
           <input type="text" id="log-search" placeholder="Cari log..." oninput="filterLogs()" class="input-sm">
+          <button class="btn btn-sm btn-secondary" onclick="exportLogs()" title="Download Logs">
+            <i class="fa-solid fa-file-arrow-down"></i> Export
+          </button>
           <button class="btn btn-sm btn-secondary" onclick="clearTerminal()">
             <i class="fa-solid fa-trash-can"></i> Clear
           </button>
@@ -260,6 +290,23 @@
         <div class="form-group">
           <label for="cfg-target-user">Target User ID (Auto-Follow - Opsional):</label>
           <input type="text" id="cfg-target-user" class="form-control" placeholder="ID User yang ingin di-follow otomatis jika pindah VC">
+        </div>
+
+        <div class="form-grid">
+          <div class="form-group">
+            <label for="cfg-presence-type">Presence / Activity Type:</label>
+            <select id="cfg-presence-type" class="form-control">
+              <option value="PLAYING">🎮 Playing (Bermain)</option>
+              <option value="LISTENING">🎧 Listening (Mendengarkan)</option>
+              <option value="WATCHING" selected>📺 Watching (Menonton)</option>
+              <option value="COMPETING">🏆 Competing (Bertanding)</option>
+              <option value="CUSTOM">⚙️ Custom Status</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label for="cfg-presence-text">Presence Status Text:</label>
+            <input type="text" id="cfg-presence-text" class="form-control" placeholder="Contoh: Dashboard">
+          </div>
         </div>
 
         <div class="form-group checkbox-group">

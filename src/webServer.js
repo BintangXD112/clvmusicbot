@@ -380,6 +380,20 @@ function createWebServer(orchestrator) {
     res.status(result.success ? 200 : 400).json(result);
   });
 
+  app.post('/api/bots/bulk/voice-state', requireAuth, async (req, res) => {
+    const { action } = req.body;
+    if (!action) return res.status(400).json({ error: 'action diperlukan.' });
+    const result = await orchestrator.bulkControlVoiceState(action);
+    res.status(result.success ? 200 : 400).json(result);
+  });
+
+  app.post('/api/bots/bulk/move', requireAuth, async (req, res) => {
+    const { voiceChannelId } = req.body;
+    if (!voiceChannelId) return res.status(400).json({ error: 'voiceChannelId diperlukan.' });
+    const result = await orchestrator.bulkMoveBotChannel(voiceChannelId);
+    res.status(result.success ? 200 : 400).json(result);
+  });
+
   app.post('/api/system/restart-all', requireAuth, async (req, res) => {
     res.json(await orchestrator.restartAllBots());
   });

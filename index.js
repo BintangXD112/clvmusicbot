@@ -1,7 +1,7 @@
 require('dotenv').config();
 const fs = require('fs');
 const path = require('path');
-const { Client, GatewayIntentBits } = require('discord.js');
+const { Client, GatewayIntentBits, ActivityType } = require('discord.js');
 const { 
   joinVoiceChannel, 
   VoiceConnectionStatus, 
@@ -76,7 +76,9 @@ function loadBotConfigurations() {
               allowMove: b.allowMove !== undefined ? b.allowMove : true,
               selfMute: b.selfMute !== undefined ? !!b.selfMute : true,
               selfDeaf: b.selfDeaf !== undefined ? !!b.selfDeaf : true,
-              stopped: b.stopped !== undefined ? !!b.stopped : false
+              stopped: b.stopped !== undefined ? !!b.stopped : false,
+              presenceType: b.presenceType || 'WATCHING',
+              presenceText: b.presenceText || 'Dashboard'
             });
           }
         });
@@ -94,17 +96,19 @@ function loadBotConfigurations() {
   const numberedBotsMap = {};
   for (const [key, val] of Object.entries(process.env)) {
     if (!val || val.trim() === '') continue;
-    const match = key.match(/^BOT_(\d+)_(TOKEN|GUILD_ID|VOICE_CHANNEL_ID|TARGET_USER_ID|FOLLOW_USER_ID)$/);
+    const match = key.match(/^BOT_(\d+)_(TOKEN|GUILD_ID|VOICE_CHANNEL_ID|TARGET_USER_ID|FOLLOW_USER_ID|PRESENCE_TYPE|PRESENCE_TEXT)$/);
     if (match) {
       const botIndex = match[1];
       const fieldType = match[2];
       if (!numberedBotsMap[botIndex]) {
-        numberedBotsMap[botIndex] = { name: `Bot #${botIndex}`, allowMove: true, selfMute: true, selfDeaf: true, stopped: false };
+        numberedBotsMap[botIndex] = { name: `Bot #${botIndex}`, allowMove: true, selfMute: true, selfDeaf: true, stopped: false, presenceType: 'WATCHING', presenceText: 'Dashboard' };
       }
       if (fieldType === 'TOKEN') numberedBotsMap[botIndex].token = val.trim();
       if (fieldType === 'GUILD_ID') numberedBotsMap[botIndex].guildId = val.trim();
       if (fieldType === 'VOICE_CHANNEL_ID') numberedBotsMap[botIndex].voiceChannelId = val.trim();
       if (fieldType === 'TARGET_USER_ID' || fieldType === 'FOLLOW_USER_ID') numberedBotsMap[botIndex].targetUserId = val.trim();
+      if (fieldType === 'PRESENCE_TYPE') numberedBotsMap[botIndex].presenceType = val.trim();
+      if (fieldType === 'PRESENCE_TEXT') numberedBotsMap[botIndex].presenceText = val.trim();
     }
   }
 
@@ -143,7 +147,9 @@ function loadBotConfigurations() {
       allowMove: true,
       selfMute: true,
       selfDeaf: true,
-      stopped: false
+      stopped: false,
+      presenceType: process.env.PRESENCE_TYPE || 'WATCHING',
+      presenceText: process.env.PRESENCE_TEXT || 'Dashboard'
     });
   }
 
@@ -181,6 +187,9 @@ class AFKBotInstance {
     this.selfMute = config.selfMute !== undefined ? !!config.selfMute : true;
     this.selfDeaf = config.selfDeaf !== undefined ? !!config.selfDeaf : true;
 
+    this.presenceType = config.presenceType || 'WATCHING';
+    this.presenceText = config.presenceText || 'Dashboard';
+
     this.isConnecting = false;
     this.status = config.stopped ? 'Stopped' : 'Connecting'; // 'Connecting', 'Online', 'Disconnected', 'Stopped', 'Error'
     this.reconnectTimer = null;
@@ -204,6 +213,32 @@ class AFKBotInstance {
     this.loadCommands();
 
     this.setupEvents();
+  }
+
+  updatePresence() {
+    if (!this.client || !this.client.isReady()) return;
+    try {
+      const typeMap = {
+        'PLAYING': ActivityType.Playing,
+        'LISTENING': ActivityType.Listening,
+        'WATCHING': ActivityType.Watching,
+        'COMPETING': ActivityType.Competing,
+        'CUSTOM': ActivityType.Custom
+      };
+      const activityType = typeMap[String(this.presenceType).toUpperCase()] !== undefined 
+        ? typeMap[String(this.presenceType).toUpperCase()] 
+        : ActivityType.Watching;
+      
+      const activityText = this.presenceText || 'Dashboard';
+      
+      this.client.user.setPresence({
+        activities: [{ name: activityText, type: activityType }],
+        status: 'online'
+      });
+      this.logInfo(`[PRESENCE] Mengatur presence ke: ${this.presenceType} - "${activityText}"`);
+    } catch (err) {
+      this.logError(`Gagal memperbarui status presence: ${err.message}`);
+    }
   }
 
   log(level, color, message, extra = '') {
@@ -256,6 +291,9 @@ class AFKBotInstance {
 
       // Connect to Voice Channel
       this.connectToVoiceChannel();
+
+      // Update custom presence
+      this.updatePresence();
 
       // Health check interval every 30 seconds
       if (this.healthInterval) clearInterval(this.healthInterval);
@@ -583,7 +621,9 @@ class AFKBotInstance {
       tag: this.client.user ? this.client.user.tag : null,
       id: this.client.user ? this.client.user.id : null,
       selfMute: this.selfMute,
-      selfDeaf: this.selfDeaf
+      selfDeaf: this.selfDeaf,
+      presenceType: this.presenceType,
+      presenceText: this.presenceText
     };
   }
 }
@@ -675,6 +715,8 @@ const botOrchestrator = {
     }
     if (newConfig.targetUserId !== undefined) bot.targetUserId = newConfig.targetUserId || null;
     if (newConfig.allowMove !== undefined) bot.allowMove = !!newConfig.allowMove;
+    if (newConfig.presenceType !== undefined) bot.presenceType = newConfig.presenceType;
+    if (newConfig.presenceText !== undefined) bot.presenceText = newConfig.presenceText;
 
     persistAllConfigs();
 
@@ -682,6 +724,7 @@ const botOrchestrator = {
     bot.destroyVoiceConnection();
     if (bot.status !== 'Stopped') {
       bot.connectToVoiceChannel();
+      setTimeout(() => bot.updatePresence(), 2000);
     }
 
     return { success: true, message: `Konfigurasi ${bot.name} berhasil disimpan.` };
@@ -697,7 +740,9 @@ const botOrchestrator = {
       allowMove: config.allowMove !== false,
       selfMute: true,
       selfDeaf: true,
-      stopped: false
+      stopped: false,
+      presenceType: config.presenceType || 'WATCHING',
+      presenceText: config.presenceText || 'Dashboard'
     };
 
     const idx = activeBotInstances.length;
@@ -725,6 +770,37 @@ const botOrchestrator = {
     return { success: true, message: `Bot berhasil dihapus.` };
   },
 
+  async bulkControlVoiceState(action) {
+    let successCount = 0;
+    activeBotInstances.forEach(bot => {
+      if (bot.status === 'Online') {
+        if (action === 'mute') bot.setSelfMute(true);
+        else if (action === 'unmute') bot.setSelfMute(false);
+        else if (action === 'deafen') bot.setSelfDeaf(true);
+        else if (action === 'undeafen') bot.setSelfDeaf(false);
+        else if (action === 'reconnect') {
+          bot.destroyVoiceConnection();
+          bot.connectToVoiceChannel();
+        }
+        successCount++;
+      }
+    });
+    persistAllConfigs();
+    return { success: true, message: `Berhasil menjalankan ${action} ke ${successCount} bot.` };
+  },
+
+  async bulkMoveBotChannel(voiceChannelId) {
+    let successCount = 0;
+    for (const bot of activeBotInstances) {
+      if (bot.status === 'Online') {
+        await bot.moveVoiceChannel(voiceChannelId);
+        successCount++;
+      }
+    }
+    persistAllConfigs();
+    return { success: true, message: `Berhasil memindahkan ${successCount} bot.` };
+  },
+
   async restartAllBots() {
     activeBotInstances.forEach(bot => {
       bot.destroy();
@@ -747,7 +823,9 @@ function persistAllConfigs() {
     allowMove: bot.allowMove,
     selfMute: bot.selfMute,
     selfDeaf: bot.selfDeaf,
-    stopped: bot.status === 'Stopped'
+    stopped: bot.status === 'Stopped',
+    presenceType: bot.presenceType,
+    presenceText: bot.presenceText
   }));
   saveBotConfigurations(configs);
 }
