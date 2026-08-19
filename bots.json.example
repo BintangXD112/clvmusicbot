@@ -1,0 +1,17 @@
+[
+  {
+    "name": "Bot AFK Utama",
+    "token": "YOUR_BOT_TOKEN_1",
+    "guildId": "YOUR_GUILD_ID_1",
+    "voiceChannelId": "YOUR_VOICE_CHANNEL_ID_1",
+    "targetUserId": "OPTIONAL_USER_ID_TO_FOLLOW",
+    "allowMove": true
+  },
+  {
+    "name": "Bot AFK Cadangan",
+    "token": "YOUR_BOT_TOKEN_2",
+    "guildId": "YOUR_GUILD_ID_2",
+    "voiceChannelId": "YOUR_VOICE_CHANNEL_ID_2",
+    "allowMove": true
+  }
+]

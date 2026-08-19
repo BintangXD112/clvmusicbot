@@ -1,0 +1,337 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Discord AFK Bot - Monitoring & Management Dashboard</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div class="app-container">
+    <!-- Header -->
+    <header class="app-header">
+      <div class="header-brand">
+        <div class="logo-icon">
+          <i class="fa-solid fa-robot"></i>
+        </div>
+        <div class="brand-text">
+          <h1>Discord AFK Control Center</h1>
+          <p class="subtitle">Full Server Monitoring & Bot Management</p>
+        </div>
+      </div>
+      
+      <div class="header-actions">
+        <div class="connection-status" id="live-indicator">
+          <span class="pulse-dot"></span>
+          <span class="status-text">SSE Live Telemetry</span>
+        </div>
+        
+        <div class="connection-status" style="background: rgba(16, 185, 129, 0.1); border-color: rgba(16, 185, 129, 0.2); color: var(--success);">
+          <i class="fa-solid fa-shield-halved"></i>
+          <span>TOTP Secured</span>
+        </div>
+
+        <button class="btn btn-secondary" onclick="fetchData()">
+          <i class="fa-solid fa-arrows-rotate"></i> Refresh
+        </button>
+        <button class="btn btn-warning" onclick="restartAllBots()">
+          <i class="fa-solid fa-power-off"></i> Restart All
+        </button>
+        <button class="btn btn-primary" onclick="openAddBotModal()">
+          <i class="fa-solid fa-plus"></i> Tambah Bot
+        </button>
+        <button class="btn btn-secondary" onclick="openSettingsModal()">
+          <i class="fa-solid fa-gear"></i> Settings
+        </button>
+        <button class="btn btn-danger btn-sm" onclick="logoutUser()" title="Keluar / Logout">
+          <i class="fa-solid fa-right-from-bracket"></i>
+        </button>
+      </div>
+    </header>
+
+    <!-- Main Dashboard Metrics -->
+    <section class="metrics-grid">
+      <!-- CPU Metric Card -->
+      <div class="metric-card">
+        <div class="metric-header">
+          <div class="metric-icon cpu-icon">
+            <i class="fa-solid fa-microchip"></i>
+          </div>
+          <span class="metric-title">CPU Load</span>
+        </div>
+        <div class="metric-body">
+          <div class="metric-value" id="cpu-usage">0%</div>
+          <div class="progress-bar">
+            <div class="progress-fill cpu-fill" id="cpu-bar" style="width: 0%"></div>
+          </div>
+        </div>
+        <div class="metric-footer">
+          <span id="cpu-model"><i class="fa-solid fa-info-circle"></i> Loading CPU...</span>
+          <span id="cpu-cores">0 Cores</span>
+        </div>
+      </div>
+
+      <!-- Memory Metric Card -->
+      <div class="metric-card">
+        <div class="metric-header">
+          <div class="metric-icon ram-icon">
+            <i class="fa-solid fa-memory"></i>
+          </div>
+          <span class="metric-title">RAM Usage</span>
+        </div>
+        <div class="metric-body">
+          <div class="metric-value" id="ram-usage">0%</div>
+          <div class="progress-bar">
+            <div class="progress-fill ram-fill" id="ram-bar" style="width: 0%"></div>
+          </div>
+        </div>
+        <div class="metric-footer">
+          <span id="ram-detail">0 GB / 0 GB</span>
+          <span id="process-ram">Heap: 0 MB</span>
+        </div>
+      </div>
+
+      <!-- System Uptime Card -->
+      <div class="metric-card">
+        <div class="metric-header">
+          <div class="metric-icon uptime-icon">
+            <i class="fa-solid fa-clock"></i>
+          </div>
+          <span class="metric-title">Server Uptime</span>
+        </div>
+        <div class="metric-body">
+          <div class="metric-value font-mono" id="process-uptime">00d 00h 00m</div>
+          <div class="sub-value" id="os-uptime">OS Uptime: 0d 0h</div>
+        </div>
+        <div class="metric-footer">
+          <span id="os-info"><i class="fa-solid fa-server"></i> System</span>
+          <span id="node-version">Node.js</span>
+        </div>
+      </div>
+
+      <!-- Bot Network Status Card -->
+      <div class="metric-card">
+        <div class="metric-header">
+          <div class="metric-icon bots-icon">
+            <i class="fa-solid fa-network-wired"></i>
+          </div>
+          <span class="metric-title">Bots Overview</span>
+        </div>
+        <div class="metric-body">
+          <div class="metric-value" id="bot-count-text">0 / 0</div>
+          <div class="sub-value text-success" id="bot-vc-summary">0 Bot di Voice Channel</div>
+        </div>
+        <div class="metric-footer">
+          <span id="overall-status">System Operational</span>
+          <span id="avg-ping">Ping: -- ms</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- GPU Metric Card (row below, full width style) -->
+    <section class="section-container" style="padding: 0; background: transparent; border: none; box-shadow: none; margin-top: 0;">
+      <div class="metrics-grid" id="gpu-metrics-container">
+        <!-- Rendered dynamically by app.js when GPU data is available -->
+      </div>
+    </section>
+
+    <!-- Bot Instances Section -->
+    <section class="section-container">
+      <div class="section-header">
+        <h2><i class="fa-solid fa-users-gear"></i> Bot Instance Management</h2>
+        <div class="section-controls">
+          <span class="badge badge-info" id="active-bots-badge">0 Bots Active</span>
+        </div>
+      </div>
+
+      <div class="bots-grid" id="bots-grid-container">
+        <!-- Rendered dynamically by app.js -->
+        <div class="loading-spinner">
+          <i class="fa-solid fa-circle-notch fa-spin"></i> Memuat data bot...
+        </div>
+      </div>
+    </section>
+
+    <!-- Live Console Terminal -->
+    <section class="section-container">
+      <div class="section-header">
+        <h2><i class="fa-solid fa-terminal"></i> Live Console Logs</h2>
+        <div class="terminal-actions">
+          <div class="filter-buttons">
+            <button class="filter-btn active" data-level="ALL" onclick="filterLogs('ALL')">All</button>
+            <button class="filter-btn text-cyan" data-level="INFO" onclick="filterLogs('INFO')">Info</button>
+            <button class="filter-btn text-success" data-level="SUCCESS" onclick="filterLogs('SUCCESS')">Success</button>
+            <button class="filter-btn text-warning" data-level="WARN" onclick="filterLogs('WARN')">Warn</button>
+            <button class="filter-btn text-danger" data-level="ERROR" onclick="filterLogs('ERROR')">Error</button>
+          </div>
+          <input type="text" id="log-search" placeholder="Cari log..." oninput="filterLogs()" class="input-sm">
+          <button class="btn btn-sm btn-secondary" onclick="clearTerminal()">
+            <i class="fa-solid fa-trash-can"></i> Clear
+          </button>
+        </div>
+      </div>
+
+      <div class="terminal-window">
+        <div class="terminal-header">
+          <div class="terminal-dots">
+            <span class="dot red"></span>
+            <span class="dot yellow"></span>
+            <span class="dot green"></span>
+          </div>
+          <span class="terminal-title">System Log Feed (Real-Time SSE)</span>
+          <label class="auto-scroll-label">
+            <input type="checkbox" id="auto-scroll-check" checked> Auto-Scroll
+          </label>
+        </div>
+        <div class="terminal-body" id="log-container">
+          <div class="log-entry info">
+            <span class="log-time">[--:--:--]</span>
+            <span class="log-tag">[SYSTEM]</span>
+            <span class="log-message">Menghubungkan ke SSE live feed...</span>
+          </div>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <!-- Modal: Move Bot Voice Channel -->
+  <div class="modal-backdrop" id="move-channel-modal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3><i class="fa-solid fa-arrow-right-to-city"></i> Pindahkan Bot ke Voice Channel</h3>
+        <button class="close-btn" onclick="closeModal('move-channel-modal')">&times;</button>
+      </div>
+      <div class="modal-body">
+        <p class="modal-desc">Pilih Voice Channel dari server Discord target untuk memindahkan bot ini secara langsung.</p>
+        <input type="hidden" id="move-bot-index">
+        
+        <div class="form-group">
+          <label for="channel-select"><i class="fa-solid fa-volume-high"></i> Pilih Voice Channel:</label>
+          <select id="channel-select" class="form-control">
+            <option value="">-- Memuat daftar channel... --</option>
+          </select>
+        </div>
+        <div id="channel-load-status" class="status-msg"></div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" onclick="closeModal('move-channel-modal')">Batal</button>
+        <button class="btn btn-primary" onclick="confirmMoveChannel()">
+          <i class="fa-solid fa-paper-plane"></i> Pindahkan Sekarang
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal: Add / Edit Bot Configuration -->
+  <div class="modal-backdrop" id="bot-config-modal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3 id="modal-config-title"><i class="fa-solid fa-robot"></i> Tambah Konfigurasi Bot</h3>
+        <button class="close-btn" onclick="closeModal('bot-config-modal')">&times;</button>
+      </div>
+      <div class="modal-body">
+        <input type="hidden" id="config-bot-index" value="-1">
+        
+        <div class="form-group">
+          <label for="cfg-name">Nama Bot (Label Internal):</label>
+          <input type="text" id="cfg-name" class="form-control" placeholder="Contoh: Bot AFK Utama">
+        </div>
+
+        <div class="form-group">
+          <label for="cfg-token">Discord Bot Token:</label>
+          <input type="password" id="cfg-token" class="form-control" placeholder="Paste Token Bot Discord di sini">
+        </div>
+
+        <div class="form-grid">
+          <div class="form-group">
+            <label for="cfg-guild">Guild / Server ID:</label>
+            <input type="text" id="cfg-guild" class="form-control" placeholder="ID Server Discord">
+          </div>
+          <div class="form-group">
+            <label for="cfg-vc">Voice Channel ID Asal:</label>
+            <input type="text" id="cfg-vc" class="form-control" placeholder="ID Voice Channel">
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label for="cfg-target-user">Target User ID (Auto-Follow - Opsional):</label>
+          <input type="text" id="cfg-target-user" class="form-control" placeholder="ID User yang ingin di-follow otomatis jika pindah VC">
+        </div>
+
+        <div class="form-group checkbox-group">
+          <label class="custom-checkbox">
+            <input type="checkbox" id="cfg-allow-move" checked>
+            <span class="checkmark"></span>
+            Ijinkan menetap jika dipindahkan ke TempVoice / VC lain (allowMove)
+          </label>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" onclick="closeModal('bot-config-modal')">Batal</button>
+        <button class="btn btn-primary" onclick="saveBotConfig()">
+          <i class="fa-solid fa-save"></i> Simpan & Jalankan
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal: Settings -->
+  <div class="modal-backdrop" id="settings-modal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3><i class="fa-solid fa-gear"></i> Settings</h3>
+        <button class="close-btn" onclick="closeModal('settings-modal')">&times;</button>
+      </div>
+      <div class="modal-body">
+        <p class="modal-desc">Konfigurasi variabel lingkungan untuk Bot Anda secara global.</p>
+        <div class="form-group">
+          <label for="set-gemini-key">Gemini API Key:</label>
+          <input type="password" id="set-gemini-key" class="form-control" placeholder="Masukkan Gemini API Key">
+        </div>
+        <div class="form-group">
+          <label for="set-gemini-model">Gemini Model:</label>
+          <input type="text" id="set-gemini-model" class="form-control" placeholder="Contoh: gemini-3.6-flash">
+        </div>
+        <div class="form-group">
+          <label for="set-music-prefix">Music Command Prefix:</label>
+          <input type="text" id="set-music-prefix" class="form-control" placeholder="Contoh: ! atau ?">
+        </div>
+        <div class="form-group">
+          <label for="set-owner-ids">
+            <i class="fa-solid fa-crown" style="color:#f59e0b;"></i>
+            Owner Discord ID
+            <span style="font-size:0.75rem;color:var(--text-muted);font-weight:400;"> — pisahkan dengan koma jika lebih dari 1</span>
+          </label>
+          <input type="text" id="set-owner-ids" class="form-control" placeholder="Contoh: 123456789012345678, 987654321098765432">
+          <small style="color:var(--text-muted);">Hanya user dengan ID ini yang bisa menjalankan <code>!disablemusic</code> &amp; <code>!enablemusic</code>. Kosongkan untuk izinkan semua Manage Server.</small>
+        </div>
+        <div class="form-grid">
+          <div class="form-group">
+            <label for="set-default-volume">Default Volume (0-100):</label>
+            <input type="number" id="set-default-volume" class="form-control" placeholder="100" min="0" max="100">
+          </div>
+          <div class="form-group">
+            <label for="set-idle-timeout">Idle Timeout (Detik):</label>
+            <input type="number" id="set-idle-timeout" class="form-control" placeholder="60" min="0">
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" onclick="closeModal('settings-modal')">Batal</button>
+        <button class="btn btn-primary" onclick="saveSettings()">
+          <i class="fa-solid fa-save"></i> Simpan
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast Notification System -->
+  <div id="toast-container" class="toast-container"></div>
+
+  <script src="app.js?v=3"></script>
+</body>
+</html>

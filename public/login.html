@@ -1,0 +1,489 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Login - Discord AFK Control Center</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <link rel="stylesheet" href="style.css">
+  <style>
+    body {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      padding: 20px;
+    }
+
+    .login-wrapper {
+      width: 100%;
+      max-width: 460px;
+    }
+
+    .login-card {
+      background: var(--bg-card);
+      backdrop-filter: blur(20px);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-lg);
+      padding: 36px 32px;
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.6);
+      display: flex;
+      flex-direction: column;
+      gap: 24px;
+    }
+
+    .login-logo {
+      width: 72px;
+      height: 72px;
+      background: linear-gradient(135deg, #3b82f6, #8b5cf6);
+      border-radius: 20px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 32px;
+      color: white;
+      box-shadow: 0 8px 28px rgba(59, 130, 246, 0.45);
+      margin: 0 auto;
+    }
+
+    .login-header {
+      text-align: center;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .login-header h2 {
+      font-size: 1.6rem;
+      font-weight: 700;
+    }
+
+    .login-header p {
+      font-size: 0.875rem;
+      color: var(--text-muted);
+    }
+
+    /* Setup Mode: QR Code Section */
+    .qr-section {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 16px;
+    }
+
+    .qr-container {
+      background: #ffffff;
+      padding: 14px;
+      border-radius: var(--radius-md);
+      display: inline-block;
+      box-shadow: 0 4px 20px rgba(255, 255, 255, 0.12);
+    }
+
+    .qr-container img {
+      display: block;
+      border-radius: 4px;
+    }
+
+    .setup-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      padding: 6px 14px;
+      background: rgba(245, 158, 11, 0.15);
+      border: 1px solid rgba(245, 158, 11, 0.35);
+      border-radius: 20px;
+      color: #fbbf24;
+      font-size: 0.8rem;
+      font-weight: 600;
+    }
+
+    .setup-steps {
+      width: 100%;
+      background: rgba(15, 23, 42, 0.7);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-md);
+      padding: 14px 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .step-item {
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+      font-size: 0.83rem;
+      color: var(--text-muted);
+      line-height: 1.4;
+    }
+
+    .step-num {
+      min-width: 22px;
+      height: 22px;
+      background: rgba(59, 130, 246, 0.2);
+      border: 1px solid rgba(59, 130, 246, 0.3);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.72rem;
+      font-weight: 700;
+      color: #60a5fa;
+      flex-shrink: 0;
+    }
+
+    .divider {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      color: var(--text-dim);
+      font-size: 0.78rem;
+    }
+    .divider::before, .divider::after {
+      content: '';
+      flex: 1;
+      height: 1px;
+      background: var(--border-color);
+    }
+
+    /* Input token style */
+    .token-input-wrapper {
+      display: flex;
+      gap: 8px;
+      justify-content: center;
+    }
+
+    .digit-input {
+      width: 48px;
+      height: 58px;
+      background: rgba(15, 23, 42, 0.9);
+      border: 2px solid var(--border-color);
+      border-radius: var(--radius-md);
+      color: white;
+      font-family: var(--font-mono);
+      font-size: 1.5rem;
+      font-weight: 700;
+      text-align: center;
+      transition: border-color 0.2s ease, box-shadow 0.2s ease;
+      caret-color: var(--primary);
+    }
+
+    .digit-input:focus {
+      outline: none;
+      border-color: var(--primary);
+      box-shadow: 0 0 14px rgba(59, 130, 246, 0.4);
+    }
+
+    .digit-input.filled {
+      border-color: rgba(59, 130, 246, 0.5);
+      color: #93c5fd;
+    }
+
+    @keyframes shake {
+      0%, 100% { transform: translateX(0); }
+      20% { transform: translateX(-8px); }
+      40% { transform: translateX(8px); }
+      60% { transform: translateX(-6px); }
+      80% { transform: translateX(6px); }
+    }
+
+    .shake { animation: shake 0.4s ease; }
+
+    .full-input {
+      width: 100%;
+      background: rgba(15, 23, 42, 0.9);
+      border: 2px solid var(--border-color);
+      border-radius: var(--radius-md);
+      padding: 14px 18px;
+      color: white;
+      font-family: var(--font-mono);
+      font-size: 1.8rem;
+      font-weight: 700;
+      text-align: center;
+      letter-spacing: 14px;
+      transition: border-color 0.2s ease, box-shadow 0.2s ease;
+    }
+
+    .full-input:focus {
+      outline: none;
+      border-color: var(--primary);
+      box-shadow: 0 0 20px rgba(59, 130, 246, 0.4);
+    }
+
+    .btn-login {
+      width: 100%;
+      padding: 14px;
+      font-size: 1rem;
+      justify-content: center;
+    }
+
+    .alert-box {
+      padding: 10px 14px;
+      border-radius: var(--radius-md);
+      font-size: 0.85rem;
+      display: none;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .alert-box.show-error {
+      display: flex;
+      background: rgba(239, 68, 68, 0.15);
+      border: 1px solid rgba(239, 68, 68, 0.3);
+      color: #f87171;
+    }
+
+    .alert-box.show-success {
+      display: flex;
+      background: rgba(16, 185, 129, 0.15);
+      border: 1px solid rgba(16, 185, 129, 0.3);
+      color: #34d399;
+    }
+
+    .totp-timer {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      font-size: 0.82rem;
+      color: var(--text-muted);
+    }
+
+    .timer-bar-wrapper {
+      flex: 1;
+      height: 4px;
+      background: rgba(255,255,255,0.06);
+      border-radius: 2px;
+      overflow: hidden;
+    }
+
+    .timer-bar {
+      height: 100%;
+      background: linear-gradient(90deg, var(--success), #34d399);
+      border-radius: 2px;
+      transition: width 1s linear, background 1s ease;
+    }
+
+    .timer-bar.warning {
+      background: linear-gradient(90deg, var(--warning), #fbbf24);
+    }
+  </style>
+</head>
+<body>
+  <div class="login-wrapper">
+    <div class="login-card" id="login-card">
+      <!-- Header -->
+      <div class="login-header">
+        <div class="login-logo">
+          <i class="fa-solid fa-shield-halved"></i>
+        </div>
+        <h2 id="page-title">Authenticating...</h2>
+        <p id="page-subtitle">Memuat status autentikasi...</p>
+      </div>
+
+      <!-- Alert box -->
+      <div id="alert-box" class="alert-box"></div>
+
+      <!-- QR Setup Section (shown only first time) -->
+      <div id="qr-section" class="qr-section" style="display: none;">
+        <span class="setup-badge">
+          <i class="fa-solid fa-circle-exclamation"></i> Setup Diperlukan — Sekali Saja
+        </span>
+
+        <div class="qr-container">
+          <img id="qr-image" src="" alt="QR Code Google Authenticator" width="232" height="232">
+        </div>
+
+        <div class="setup-steps">
+          <div class="step-item">
+            <span class="step-num">1</span>
+            <span>Buka aplikasi <strong>Google Authenticator</strong> di smartphone Anda.</span>
+          </div>
+          <div class="step-item">
+            <span class="step-num">2</span>
+            <span>Tekan tombol <strong>"+"</strong> lalu pilih <strong>"Scan QR Code"</strong>.</span>
+          </div>
+          <div class="step-item">
+            <span class="step-num">3</span>
+            <span>Scan QR Code di atas, lalu masukkan kode 6-digit yang muncul di bawah ini.</span>
+          </div>
+        </div>
+
+        <div class="divider">masukkan kode TOTP setelah scan</div>
+      </div>
+
+      <!-- TOTP Input Form -->
+      <form id="login-form" onsubmit="handleLogin(event)" style="display: none;">
+        <!-- Timer bar -->
+        <div class="totp-timer" id="timer-container" style="margin-bottom: 12px;">
+          <i class="fa-regular fa-clock" style="color: var(--success);"></i>
+          <div class="timer-bar-wrapper">
+            <div class="timer-bar" id="timer-bar"></div>
+          </div>
+          <span id="timer-text" style="min-width: 28px; text-align: right;">30s</span>
+        </div>
+
+        <input
+          type="number"
+          id="totp-input"
+          class="full-input"
+          placeholder="000000"
+          maxlength="6"
+          inputmode="numeric"
+          pattern="[0-9]*"
+          autocomplete="one-time-code"
+          autofocus
+        >
+
+        <div style="margin-top: 18px;">
+          <button type="submit" class="btn btn-primary btn-login" id="login-btn">
+            <i class="fa-solid fa-right-to-bracket"></i> Verifikasi & Masuk
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <script>
+    let totpConfirmed = false;
+
+    document.addEventListener('DOMContentLoaded', loadStatus);
+
+    async function loadStatus() {
+      try {
+        const res = await fetch('/api/totp-status');
+        const data = await res.json();
+        totpConfirmed = data.confirmed;
+
+        if (!data.confirmed && data.qrCode) {
+          // SETUP MODE: Show QR Code
+          document.getElementById('page-title').innerText = 'Setup Google Authenticator';
+          document.getElementById('page-subtitle').innerText = 'Scan QR Code dengan Google Authenticator untuk mengamankan dashboard Anda.';
+
+          const qrSection = document.getElementById('qr-section');
+          qrSection.style.display = 'flex';
+          document.getElementById('qr-image').src = data.qrCode;
+        } else {
+          // NORMAL LOGIN MODE
+          document.getElementById('page-title').innerText = 'Masuk ke Control Center';
+          document.getElementById('page-subtitle').innerText = 'Masukkan kode 6-digit dari Google Authenticator Anda.';
+        }
+
+        // Show form in both cases
+        document.getElementById('login-form').style.display = 'block';
+        document.getElementById('totp-input').focus();
+        startTotpTimer();
+      } catch (err) {
+        showAlert('Gagal memuat status server. Coba refresh halaman.', 'error');
+      }
+    }
+
+    async function handleLogin(event) {
+      event.preventDefault();
+
+      const token = document.getElementById('totp-input').value.trim();
+      const btn = document.getElementById('login-btn');
+      const input = document.getElementById('totp-input');
+
+      if (!token || token.length < 6) {
+        shakeInput();
+        showAlert('Masukkan kode 6-digit dari Google Authenticator.', 'error');
+        return;
+      }
+
+      btn.disabled = true;
+      btn.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin"></i> Memverifikasi...';
+      hideAlert();
+
+      try {
+        const res = await fetch('/api/login', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ token })
+        });
+        const data = await res.json();
+
+        if (res.ok && data.success) {
+          showAlert('✅ Login berhasil! Mengalihkan ke dashboard...', 'success');
+          btn.innerHTML = '<i class="fa-solid fa-check"></i> Terverifikasi!';
+          setTimeout(() => {
+            window.location.href = '/';
+          }, 700);
+        } else {
+          shakeInput();
+          showAlert(data.error || 'Kode tidak valid. Coba lagi.', 'error');
+          input.value = '';
+          input.focus();
+          btn.disabled = false;
+          btn.innerHTML = '<i class="fa-solid fa-right-to-bracket"></i> Verifikasi & Masuk';
+        }
+      } catch (err) {
+        shakeInput();
+        showAlert('Gagal terhubung ke server.', 'error');
+        btn.disabled = false;
+        btn.innerHTML = '<i class="fa-solid fa-right-to-bracket"></i> Verifikasi & Masuk';
+      }
+    }
+
+    // Auto-submit when 6 digits are entered
+    document.addEventListener('DOMContentLoaded', () => {
+      const input = document.getElementById('totp-input');
+      if (input) {
+        input.addEventListener('input', (e) => {
+          // Only allow 6 chars max
+          if (e.target.value.length > 6) {
+            e.target.value = e.target.value.slice(0, 6);
+          }
+          if (e.target.value.length === 6) {
+            setTimeout(() => document.getElementById('login-form').dispatchEvent(new Event('submit')), 150);
+          }
+        });
+      }
+    });
+
+    // TOTP 30-second countdown timer bar
+    function startTotpTimer() {
+      const bar = document.getElementById('timer-bar');
+      const text = document.getElementById('timer-text');
+
+      function update() {
+        const now = Math.floor(Date.now() / 1000);
+        const remaining = 30 - (now % 30);
+        const pct = (remaining / 30) * 100;
+
+        if (bar) {
+          bar.style.width = pct + '%';
+          bar.className = 'timer-bar' + (remaining <= 8 ? ' warning' : '');
+        }
+        if (text) text.innerText = remaining + 's';
+      }
+
+      update();
+      setInterval(update, 1000);
+    }
+
+    function shakeInput() {
+      const input = document.getElementById('totp-input');
+      if (!input) return;
+      input.classList.remove('shake');
+      void input.offsetWidth;
+      input.classList.add('shake');
+    }
+
+    function showAlert(message, type) {
+      const box = document.getElementById('alert-box');
+      box.className = 'alert-box ' + (type === 'error' ? 'show-error' : 'show-success');
+      box.innerHTML = `<i class="fa-solid fa-${type === 'error' ? 'triangle-exclamation' : 'check'}"></i> ${message}`;
+    }
+
+    function hideAlert() {
+      const box = document.getElementById('alert-box');
+      box.className = 'alert-box';
+      box.innerHTML = '';
+    }
+  </script>
+</body>
+</html>
