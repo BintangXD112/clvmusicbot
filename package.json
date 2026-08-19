@@ -6,7 +6,9 @@
   "type": "commonjs",
   "scripts": {
     "start": "node index.js",
-    "start:prod": "pm2 start index.js --name discord-afk-dashboard"
+    "start:prod": "pm2 start index.js --name discord-afk-dashboard",
+    "webhook": "node webhook.js",
+    "webhook:prod": "pm2 start webhook.js --name discord-afk-webhook"
   },
   "keywords": [
     "discord",
