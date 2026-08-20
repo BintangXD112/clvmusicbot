@@ -42,7 +42,7 @@ function createSystemRouter(orchestrator) {
   // Simpan settings ke .env
   router.post('/settings', requireAuth, (req, res) => {
     const { geminiApiKey, geminiModel, musicPrefix, ownerIds, defaultVolume, idleTimeout, webhookDisabled } = req.body;
-    if (geminiApiKey === undefined || musicPrefix === undefined || defaultVolume === undefined || idleTimeout === undefined || webhookDisabled === undefined) {
+    if (geminiApiKey === undefined || musicPrefix === undefined || defaultVolume === undefined || idleTimeout === undefined) {
       return res.status(400).json({ error: 'Semua variabel setting wajib diisi.' });
     }
     try {
