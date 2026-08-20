@@ -13,7 +13,7 @@ const { createSessionMiddleware }      = require('./web/middleware');
 const authRouter                       = require('./web/routes/auth');
 const createBotsRouter                 = require('./web/routes/bots');
 const createSystemRouter               = require('./web/routes/system');
-const createSSERouter                  = require('./web/routes/sse');
+const createSSERouter                  = require('./web/sse');
 
 function createWebServer(orchestrator) {
   initDb();
