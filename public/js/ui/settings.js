@@ -15,6 +15,7 @@ async function openSettingsModal() {
       document.getElementById('set-owner-ids').value = data.ownerIds || '';
       document.getElementById('set-default-volume').value = data.defaultVolume || '100';
       document.getElementById('set-idle-timeout').value = data.idleTimeout || '60';
+      document.getElementById('set-webhook-disabled').checked = data.webhookDisabled === true || data.webhookDisabled === 'true';
     } else {
       showToast(data.error || 'Gagal memuat settings', 'error');
     }
@@ -30,6 +31,7 @@ async function saveSettings() {
   var ownerIds = document.getElementById('set-owner-ids').value.trim();
   var defaultVolume = document.getElementById('set-default-volume').value.trim();
   var idleTimeout = document.getElementById('set-idle-timeout').value.trim();
+  var webhookDisabled = document.getElementById('set-webhook-disabled').checked;
 
   if (!musicPrefix) {
     showToast('Prefix wajib diisi!', 'warn');
@@ -48,7 +50,8 @@ async function saveSettings() {
         musicPrefix: musicPrefix,
         ownerIds: ownerIds,
         defaultVolume: defaultVolume,
-        idleTimeout: idleTimeout
+        idleTimeout: idleTimeout,
+        webhookDisabled: webhookDisabled
       })
     });
     var data = await res.json();

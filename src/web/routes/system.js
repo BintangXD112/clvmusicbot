@@ -34,14 +34,15 @@ function createSystemRouter(orchestrator) {
       musicPrefix:   process.env.MUSIC_PREFIX       || '!',
       ownerIds:      process.env.OWNER_IDS          || '',
       defaultVolume: process.env.DEFAULT_VOLUME     || '100',
-      idleTimeout:   process.env.IDLE_TIMEOUT       || '60'
+      idleTimeout:   process.env.IDLE_TIMEOUT       || '60',
+      webhookDisabled: process.env.WEBHOOK_DISABLED === 'true'
     });
   });
 
   // Simpan settings ke .env
   router.post('/settings', requireAuth, (req, res) => {
-    const { geminiApiKey, geminiModel, musicPrefix, ownerIds, defaultVolume, idleTimeout } = req.body;
-    if (geminiApiKey === undefined || musicPrefix === undefined || defaultVolume === undefined || idleTimeout === undefined) {
+    const { geminiApiKey, geminiModel, musicPrefix, ownerIds, defaultVolume, idleTimeout, webhookDisabled } = req.body;
+    if (geminiApiKey === undefined || musicPrefix === undefined || defaultVolume === undefined || idleTimeout === undefined || webhookDisabled === undefined) {
       return res.status(400).json({ error: 'Semua variabel setting wajib diisi.' });
     }
     try {
@@ -51,6 +52,7 @@ function createSystemRouter(orchestrator) {
       updateEnvVariable('OWNER_IDS',      (ownerIds || '').trim());
       updateEnvVariable('DEFAULT_VOLUME', defaultVolume.trim());
       updateEnvVariable('IDLE_TIMEOUT',   idleTimeout.trim());
+      updateEnvVariable('WEBHOOK_DISABLED', String(webhookDisabled === true));
       // Re-inisialisasi Gemini agent agar API key/model baru langsung aktif
       try { require('../../ai/GeminiMusicAgent').init(); } catch (_) {}
       res.json({ success: true, message: 'Settings berhasil disimpan dan diterapkan.' });

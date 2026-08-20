@@ -16,6 +16,12 @@ const { log, BRANCH }     = require('./config');
  */
 function createRequestHandler() {
   return function handleRequest(req, res) {
+    if (process.env.WEBHOOK_DISABLED === 'true') {
+      log('WARN', `Webhook request diabaikan karena fitur webhook dinonaktifkan di settings.`);
+      res.writeHead(503, { 'Content-Type': 'application/json' });
+      return res.end(JSON.stringify({ error: 'Service Unavailable: Webhook Auto-Deploy is disabled' }));
+    }
+
     // Hanya tangani POST ke /webhook
     if (req.method !== 'POST' || req.url !== '/webhook') {
       res.writeHead(404, { 'Content-Type': 'application/json' });
