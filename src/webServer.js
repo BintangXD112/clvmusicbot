@@ -8,7 +8,8 @@
 const express = require('express');
 const path    = require('path');
 
-const { initDb, isConfirmed }          = require('./db');
+const { initDb }                       = require('./db');
+const { isConfirmed }                  = require('./totp');
 const { createSessionMiddleware }      = require('./web/middleware');
 const authRouter                       = require('./web/routes/auth');
 const createBotsRouter                 = require('./web/routes/bots');
