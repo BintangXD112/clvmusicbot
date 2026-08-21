@@ -29,6 +29,10 @@ function esc(str) {
 function escapeHtml(str) {
   return esc(str);
 }
+if (typeof window !== 'undefined') {
+  window.escapeHtml = escapeHtml;
+  window.esc = esc;
+}
 
 /** Set innerText elemen berdasarkan ID. */
 function setText(id, val) {

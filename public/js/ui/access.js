@@ -8,15 +8,17 @@ var accessStatusFilter = 'ALL';
 var accessSearchQuery = '';
 var accessPollInterval = null;
 
-if (typeof escapeHtml !== 'function') {
-  function escapeHtml(str) {
-    if (!str) return '';
-    return String(str)
-      .replace(/&/g, '&amp;')
-      .replace(/</g, '&lt;')
-      .replace(/>/g, '&gt;')
-      .replace(/"/g, '&quot;');
-  }
+/** Helper sanitasi HTML */
+function escapeHtml(str) {
+  if (!str) return '';
+  return String(str)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;');
+}
+if (typeof window !== 'undefined') {
+  window.escapeHtml = escapeHtml;
 }
 
 /**
