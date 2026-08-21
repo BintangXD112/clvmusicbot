@@ -87,8 +87,18 @@ function addAccessLog(logData) {
 function accessLoggerMiddleware(req, res, next) {
   const startTime = Date.now();
 
-  // Abaikan log internal streaming SSE/telemetry polling yang berulang agar log tidak spam
-  if (req.path === '/api/stream') {
+  // Daftar path yang dikecualikan dari access log untuk mencegah self-referencing loop.
+  // Endpoint polling internal tidak perlu dicatat karena akan terus menambah log sendiri.
+  const SKIP_PATHS = [
+    '/api/stream',        // SSE live telemetry stream
+    '/api/access/logs',   // Polling access logs (mencegah loop!)
+    '/api/system/stats',  // Polling stats dashboard
+    '/api/system/logs',   // Polling bot logs
+    '/api/bots',          // Polling status bot (GET)
+  ];
+
+  const shouldSkip = SKIP_PATHS.some(p => req.path === p || req.path.startsWith(p + '?'));
+  if (shouldSkip && req.method === 'GET') {
     return next();
   }
 
