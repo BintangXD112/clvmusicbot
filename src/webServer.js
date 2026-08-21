@@ -10,13 +10,33 @@ const path    = require('path');
 
 const { isConfirmed }                  = require('./totp');
 const { createSessionMiddleware }      = require('./web/middleware');
-const { accessLoggerMiddleware }       = require('./web/accessLogger');
-const { domainGuardMiddleware }        = require('./web/domainGuard');
 const authRouter                       = require('./web/routes/auth');
 const createBotsRouter                 = require('./web/routes/bots');
 const createSystemRouter               = require('./web/routes/system');
-const accessRouter                     = require('./web/routes/access');
 const createSSERouter                  = require('./web/sse');
+
+// Safe imports dengan fallback untuk mencegah crash jika file baru belum ter-pull di server
+let accessLoggerMiddleware = (req, res, next) => next();
+let domainGuardMiddleware = (req, res, next) => next();
+let accessRouter = express.Router();
+
+try {
+  accessLoggerMiddleware = require('./web/accessLogger').accessLoggerMiddleware;
+} catch (e) {
+  console.warn('⚠️ [WARN] Modul accessLogger.js belum terunduh di server.');
+}
+
+try {
+  domainGuardMiddleware = require('./web/domainGuard').domainGuardMiddleware;
+} catch (e) {
+  console.warn('⚠️ [WARN] Modul domainGuard.js belum terunduh di server.');
+}
+
+try {
+  accessRouter = require('./web/routes/access');
+} catch (e) {
+  console.warn('⚠️ [WARN] Modul routes/access.js belum terunduh di server.');
+}
 
 function createWebServer(orchestrator) {
   const app = express();
