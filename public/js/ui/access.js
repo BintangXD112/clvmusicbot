@@ -51,20 +51,24 @@ async function saveDomainSettings() {
   const currentHost = window.location.host;
 
   const enabled = enabledCheck ? enabledCheck.checked : false;
-  const allowedDomains = inputDomains ? inputDomains.value.trim() : '';
+  const rawAllowed = inputDomains ? inputDomains.value.trim() : '';
 
-  // Safety check: jika restriction diaktifkan, beri peringatan jika domain saat ini belum masuk
-  if (enabled && allowedDomains && allowedDomains !== '*') {
-    const list = allowedDomains.split(',').map(d => d.trim().toLowerCase());
+  // Client-side domain cleaning
+  let cleanDomain = rawAllowed.toLowerCase().replace(/^https?:\/\//i, '').split('/')[0].split('?')[0];
+  if (cleanDomain.includes(',')) cleanDomain = cleanDomain.split(',')[0].trim();
+  if (cleanDomain.includes(':')) cleanDomain = cleanDomain.split(':')[0].trim();
+  cleanDomain = cleanDomain.replace(/^\*\.?/, '');
+
+  if (enabled) {
+    if (!cleanDomain) {
+      showToast('Mohon masukkan 1 domain murni yang valid (contoh: panel.domainanda.com)', 'error');
+      return;
+    }
+
     const hostNoPort = currentHost.split(':')[0].toLowerCase();
-    const matchesCurrent = list.some(item => 
-      item === '*' || item === currentHost.toLowerCase() || item === hostNoPort || 
-      (item.startsWith('*.') && hostNoPort.endsWith(item.substring(1)))
-    );
-
-    if (!matchesCurrent) {
+    if (cleanDomain !== hostNoPort) {
       const confirmSave = confirm(
-        `⚠️ PERINGATAN KESELAMATAN:\n\nHost Anda saat ini (${currentHost}) TIDAK ada dalam daftar domain yang diizinkan.\n\nJika Anda menyimpan sekarang, Anda mungkin akan TERKUNCI DARI WEB PANEL.\n\nApakah Anda yakin ingin melanjutkan?`
+        `⚠️ PERINGATAN KESELAMATAN SANGAT PENTING:\n\nHost/Domain Anda saat ini (${hostNoPort}) BERBEDA dengan domain yang diizinkan (${cleanDomain}).\n\nJika Anda menyimpan sekarang, Anda akan LANGSUNG DIBLOKIR dari Web Panel ini.\n\nApakah Anda benar-benar yakin ingin melanjutkan?`
       );
       if (!confirmSave) return;
     }
@@ -74,7 +78,7 @@ async function saveDomainSettings() {
     const res = await fetch('/api/access/settings', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ enabled, allowedDomains })
+      body: JSON.stringify({ enabled, allowedDomains: cleanDomain })
     });
     const result = await res.json();
     if (res.ok && result.success) {

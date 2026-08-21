@@ -7,15 +7,17 @@
 const express = require('express');
 const { requireAuth, updateEnvVariable } = require('../middleware');
 const { getAccessLogs, clearAccessLogs } = require('../accessLogger');
+const { normalizeDomain, getEffectiveHost, getAllowedDomain } = require('../domainGuard');
 
 const router = express.Router();
 
 // GET /api/access/settings — Ambil konfigurasi batasan domain saat ini
 router.get('/settings', requireAuth, (req, res) => {
+  const currentHost = getEffectiveHost(req) || (req.headers.host || '').split(':')[0];
   res.json({
     enabled: process.env.ALLOWED_DOMAINS_ENABLED === 'true',
-    allowedDomains: process.env.ALLOWED_DOMAINS || '',
-    currentHost: req.headers.host || ''
+    allowedDomains: getAllowedDomain() || process.env.ALLOWED_DOMAINS || '',
+    currentHost
   });
 });
 
@@ -24,15 +26,21 @@ router.post('/settings', requireAuth, (req, res) => {
   const { enabled, allowedDomains } = req.body;
 
   try {
-    const enabledStr = String(enabled === true);
-    const domainsStr = typeof allowedDomains === 'string' ? allowedDomains.trim() : '';
+    const isEnabled = enabled === true;
+    const cleanDomain = normalizeDomain(allowedDomains);
 
-    updateEnvVariable('ALLOWED_DOMAINS_ENABLED', enabledStr);
-    updateEnvVariable('ALLOWED_DOMAINS', domainsStr);
+    if (isEnabled && !cleanDomain) {
+      return res.status(400).json({
+        error: 'Mohon masukkan 1 domain murni yang valid (contoh: panel.domainanda.com) saat mengaktifkan restriksi domain.'
+      });
+    }
+
+    updateEnvVariable('ALLOWED_DOMAINS_ENABLED', String(isEnabled));
+    updateEnvVariable('ALLOWED_DOMAINS', cleanDomain);
 
     res.json({
       success: true,
-      message: 'Pengaturan Domain Access Control berhasil disimpan!',
+      message: 'Pengaturan Restriksi Single Domain berhasil disimpan!',
       enabled: process.env.ALLOWED_DOMAINS_ENABLED === 'true',
       allowedDomains: process.env.ALLOWED_DOMAINS
     });

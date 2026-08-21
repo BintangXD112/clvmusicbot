@@ -269,15 +269,15 @@
         <!-- Domain Security Configuration Card -->
         <section class="section-container">
           <div class="section-header">
-            <h2><i class="fa-solid fa-globe"></i> Pengaturan Domain Akses Web Panel (Domain Origin Guard)</h2>
+            <h2><i class="fa-solid fa-globe"></i> Pengaturan Restriksi Single Domain (Domain Origin Guard)</h2>
           </div>
 
           <div class="domain-config-card">
             <div class="domain-info-alert">
               <div class="alert-icon"><i class="fa-solid fa-shield-cat"></i></div>
               <div class="alert-content">
-                <h3>Keamanan Restriksi Domain (Origin Host Restriction)</h3>
-                <p>Batasi akses ke Web Panel ini hanya dari domain atau IP address tertentu. Permintaan dari Host yang tidak terdaftar akan ditolak dengan respons <strong>403 Forbidden</strong>.</p>
+                <h3>Keamanan Restriksi Eksklusif 1 Domain (Strict Domain Origin Restriction)</h3>
+                <p>Batasi akses ke Web Panel ini hanya dari <strong>1 domain utama</strong>. Seluruh permintaan dari Host, IP, atau domain lain akan langsung diblokir total dengan respons <strong>403 Access Denied</strong>.</p>
                 <div class="current-host-info">
                   <span>Host / Domain Anda saat ini:</span>
                   <code id="current-host-badge" class="host-code">--</code>
@@ -289,23 +289,23 @@
               <label class="custom-checkbox switch-label">
                 <input type="checkbox" id="domain-guard-enabled">
                 <span class="checkmark"></span>
-                <strong>Aktifkan Batasan Domain Akses (Domain Origin Guard)</strong>
+                <strong>Aktifkan Batasan Akses Domain (Strict Single Domain Guard)</strong>
               </label>
             </div>
 
             <div class="form-group" style="margin-top: 14px;">
               <label for="allowed-domains-input">
-                <i class="fa-solid fa-list-check"></i> Daftar Domain yang Diizinkan (ALLOWED_DOMAINS):
+                <i class="fa-solid fa-link"></i> Domain Utama yang Diizinkan Akses (ALLOWED_DOMAINS):
               </label>
-              <input type="text" id="allowed-domains-input" class="form-control" placeholder="Contoh: panel.botkamu.com, bot.domainanda.id, localhost:24601">
+              <input type="text" id="allowed-domains-input" class="form-control" placeholder="Contoh: panel.botkamu.com atau musicbot.domainanda.id">
               <small style="color: var(--text-muted); margin-top: 6px; display: block;">
-                <i class="fa-solid fa-info-circle"></i> Pisahkan dengan koma jika lebih dari satu. Dukungan wildcard domain (misal: <code>*.domainanda.id</code>) atau gunakan <code>*</code> untuk mengizinkan semua domain.
+                <i class="fa-solid fa-info-circle"></i> Masukkan 1 nama domain murni yang memiliki wewenang mengakses Web Panel ini. Seluruh domain/IP lain akan diblokir total.
               </small>
             </div>
 
             <div class="caution-box">
               <i class="fa-solid fa-triangle-exclamation"></i>
-              <span><strong>PERINGATAN:</strong> Pastikan domain atau IP yang sedang Anda gunakan saat ini terdaftar di atas sebelum mengaktifkan fitur ini agar akun Anda tidak terkunci dari panel.</span>
+              <span><strong>PERINGATAN KESELAMATAN:</strong> Pastikan domain yang Anda isi di atas tepat sama dengan Host/Domain yang sedang Anda gunakan saat ini agar akses Anda tidak terblokir.</span>
             </div>
 
             <div style="margin-top: 20px; display: flex; justify-content: flex-end;">

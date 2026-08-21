@@ -3,10 +3,10 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Login - Discord AFK Control Center</title>
+  <title>Login Security - Discord AFK Control Center</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=JetBrains+Mono:wght@500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <link rel="stylesheet" href="style.css">
   <style>
@@ -15,55 +15,65 @@
       align-items: center;
       justify-content: center;
       min-height: 100vh;
-      padding: 20px;
+      padding: 24px;
+      position: relative;
     }
 
     .login-wrapper {
       width: 100%;
-      max-width: 460px;
+      max-width: 480px;
+      position: relative;
+      z-index: 2;
     }
 
     .login-card {
-      background: var(--bg-card);
-      backdrop-filter: blur(20px);
-      border: 1px solid var(--border-color);
-      border-radius: var(--radius-lg);
-      padding: 36px 32px;
-      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.6);
+      background: rgba(15, 23, 42, 0.82);
+      backdrop-filter: blur(28px);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      border-radius: 24px;
+      padding: 42px 36px;
+      box-shadow: 0 25px 70px rgba(0, 0, 0, 0.75), 0 0 40px rgba(99, 102, 241, 0.15);
       display: flex;
       flex-direction: column;
-      gap: 24px;
+      gap: 26px;
+      transition: transform 0.3s ease;
     }
 
     .login-logo {
-      width: 72px;
-      height: 72px;
-      background: linear-gradient(135deg, #3b82f6, #8b5cf6);
-      border-radius: 20px;
+      width: 76px;
+      height: 76px;
+      background: var(--primary-gradient);
+      border-radius: 24px;
       display: flex;
       align-items: center;
       justify-content: center;
-      font-size: 32px;
+      font-size: 34px;
       color: white;
-      box-shadow: 0 8px 28px rgba(59, 130, 246, 0.45);
+      box-shadow: 0 10px 30px var(--primary-glow);
       margin: 0 auto;
+      border: 2px solid rgba(255, 255, 255, 0.2);
     }
 
     .login-header {
       text-align: center;
       display: flex;
       flex-direction: column;
-      gap: 10px;
+      gap: 8px;
     }
 
     .login-header h2 {
-      font-size: 1.6rem;
+      font-size: 1.75rem;
       font-weight: 700;
+      letter-spacing: -0.5px;
+      background: linear-gradient(135deg, #ffffff 0%, #cbd5e1 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
     }
 
     .login-header p {
-      font-size: 0.875rem;
+      font-size: 0.9rem;
       color: var(--text-muted);
+      line-height: 1.5;
     }
 
     /* Setup Mode: QR Code Section */
@@ -71,67 +81,68 @@
       display: flex;
       flex-direction: column;
       align-items: center;
-      gap: 16px;
+      gap: 18px;
     }
 
     .qr-container {
       background: #ffffff;
-      padding: 14px;
-      border-radius: var(--radius-md);
+      padding: 16px;
+      border-radius: 16px;
       display: inline-block;
-      box-shadow: 0 4px 20px rgba(255, 255, 255, 0.12);
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+      border: 2px solid rgba(99, 102, 241, 0.3);
     }
 
     .qr-container img {
       display: block;
-      border-radius: 4px;
+      border-radius: 6px;
     }
 
     .setup-badge {
       display: inline-flex;
       align-items: center;
-      gap: 7px;
-      padding: 6px 14px;
+      gap: 8px;
+      padding: 8px 16px;
       background: rgba(245, 158, 11, 0.15);
-      border: 1px solid rgba(245, 158, 11, 0.35);
-      border-radius: 20px;
+      border: 1px solid rgba(245, 158, 11, 0.4);
+      border-radius: var(--radius-pill);
       color: #fbbf24;
-      font-size: 0.8rem;
-      font-weight: 600;
+      font-size: 0.82rem;
+      font-weight: 700;
     }
 
     .setup-steps {
       width: 100%;
-      background: rgba(15, 23, 42, 0.7);
+      background: rgba(10, 15, 26, 0.8);
       border: 1px solid var(--border-color);
       border-radius: var(--radius-md);
-      padding: 14px 16px;
+      padding: 16px;
       display: flex;
       flex-direction: column;
-      gap: 8px;
+      gap: 10px;
     }
 
     .step-item {
       display: flex;
       align-items: flex-start;
-      gap: 10px;
-      font-size: 0.83rem;
+      gap: 12px;
+      font-size: 0.86rem;
       color: var(--text-muted);
       line-height: 1.4;
     }
 
     .step-num {
-      min-width: 22px;
-      height: 22px;
-      background: rgba(59, 130, 246, 0.2);
-      border: 1px solid rgba(59, 130, 246, 0.3);
+      min-width: 24px;
+      height: 24px;
+      background: rgba(99, 102, 241, 0.2);
+      border: 1px solid rgba(99, 102, 241, 0.4);
       border-radius: 50%;
       display: flex;
       align-items: center;
       justify-content: center;
-      font-size: 0.72rem;
+      font-size: 0.75rem;
       font-weight: 700;
-      color: #60a5fa;
+      color: #818cf8;
       flex-shrink: 0;
     }
 
@@ -140,46 +151,15 @@
       align-items: center;
       gap: 12px;
       color: var(--text-dim);
-      font-size: 0.78rem;
+      font-size: 0.8rem;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
     }
     .divider::before, .divider::after {
       content: '';
       flex: 1;
       height: 1px;
       background: var(--border-color);
-    }
-
-    /* Input token style */
-    .token-input-wrapper {
-      display: flex;
-      gap: 8px;
-      justify-content: center;
-    }
-
-    .digit-input {
-      width: 48px;
-      height: 58px;
-      background: rgba(15, 23, 42, 0.9);
-      border: 2px solid var(--border-color);
-      border-radius: var(--radius-md);
-      color: white;
-      font-family: var(--font-mono);
-      font-size: 1.5rem;
-      font-weight: 700;
-      text-align: center;
-      transition: border-color 0.2s ease, box-shadow 0.2s ease;
-      caret-color: var(--primary);
-    }
-
-    .digit-input:focus {
-      outline: none;
-      border-color: var(--primary);
-      box-shadow: 0 0 14px rgba(59, 130, 246, 0.4);
-    }
-
-    .digit-input.filled {
-      border-color: rgba(59, 130, 246, 0.5);
-      color: #93c5fd;
     }
 
     @keyframes shake {
@@ -194,52 +174,55 @@
 
     .full-input {
       width: 100%;
-      background: rgba(15, 23, 42, 0.9);
+      background: rgba(10, 15, 26, 0.9);
       border: 2px solid var(--border-color);
       border-radius: var(--radius-md);
-      padding: 14px 18px;
+      padding: 16px;
       color: white;
       font-family: var(--font-mono);
-      font-size: 1.8rem;
+      font-size: 2rem;
       font-weight: 700;
       text-align: center;
-      letter-spacing: 14px;
-      transition: border-color 0.2s ease, box-shadow 0.2s ease;
+      letter-spacing: 16px;
+      transition: all 0.25s ease;
     }
 
     .full-input:focus {
       outline: none;
       border-color: var(--primary);
-      box-shadow: 0 0 20px rgba(59, 130, 246, 0.4);
+      box-shadow: 0 0 25px var(--primary-glow);
     }
 
     .btn-login {
       width: 100%;
-      padding: 14px;
+      padding: 15px;
       font-size: 1rem;
+      font-weight: 700;
       justify-content: center;
+      border-radius: var(--radius-md);
     }
 
     .alert-box {
-      padding: 10px 14px;
+      padding: 12px 16px;
       border-radius: var(--radius-md);
-      font-size: 0.85rem;
+      font-size: 0.88rem;
+      font-weight: 600;
       display: none;
       align-items: center;
-      gap: 8px;
+      gap: 10px;
     }
 
     .alert-box.show-error {
       display: flex;
-      background: rgba(239, 68, 68, 0.15);
-      border: 1px solid rgba(239, 68, 68, 0.3);
-      color: #f87171;
+      background: rgba(244, 63, 94, 0.15);
+      border: 1px solid rgba(244, 63, 94, 0.35);
+      color: #fb7185;
     }
 
     .alert-box.show-success {
       display: flex;
       background: rgba(16, 185, 129, 0.15);
-      border: 1px solid rgba(16, 185, 129, 0.3);
+      border: 1px solid rgba(16, 185, 129, 0.35);
       color: #34d399;
     }
 
@@ -247,23 +230,24 @@
       display: flex;
       align-items: center;
       justify-content: center;
-      gap: 8px;
-      font-size: 0.82rem;
+      gap: 10px;
+      font-size: 0.85rem;
       color: var(--text-muted);
+      font-family: var(--font-mono);
     }
 
     .timer-bar-wrapper {
       flex: 1;
-      height: 4px;
-      background: rgba(255,255,255,0.06);
-      border-radius: 2px;
+      height: 5px;
+      background: rgba(255, 255, 255, 0.08);
+      border-radius: 4px;
       overflow: hidden;
     }
 
     .timer-bar {
       height: 100%;
       background: linear-gradient(90deg, var(--success), #34d399);
-      border-radius: 2px;
+      border-radius: 4px;
       transition: width 1s linear, background 1s ease;
     }
 
@@ -318,7 +302,7 @@
       <!-- TOTP Input Form -->
       <form id="login-form" onsubmit="handleLogin(event)" style="display: none;">
         <!-- Timer bar -->
-        <div class="totp-timer" id="timer-container" style="margin-bottom: 12px;">
+        <div class="totp-timer" id="timer-container" style="margin-bottom: 14px;">
           <i class="fa-regular fa-clock" style="color: var(--success);"></i>
           <div class="timer-bar-wrapper">
             <div class="timer-bar" id="timer-bar"></div>
@@ -338,9 +322,9 @@
           autofocus
         >
 
-        <div style="margin-top: 18px;">
+        <div style="margin-top: 20px;">
           <button type="submit" class="btn btn-primary btn-login" id="login-btn">
-            <i class="fa-solid fa-right-to-bracket"></i> Verifikasi & Masuk
+            <i class="fa-solid fa-right-to-bracket"></i> Verifikasi &amp; Masuk
           </button>
         </div>
       </form>
@@ -433,7 +417,6 @@
       const input = document.getElementById('totp-input');
       if (input) {
         input.addEventListener('input', (e) => {
-          // Only allow 6 chars max
           if (e.target.value.length > 6) {
             e.target.value = e.target.value.slice(0, 6);
           }
@@ -476,7 +459,7 @@
     function showAlert(message, type) {
       const box = document.getElementById('alert-box');
       box.className = 'alert-box ' + (type === 'error' ? 'show-error' : 'show-success');
-      box.innerHTML = `<i class="fa-solid fa-${type === 'error' ? 'triangle-exclamation' : 'check'}"></i> ${message}`;
+      box.innerHTML = `<i class="fa-solid fa-${type === 'error' ? 'triangle-exclamation' : 'circle-check'}"></i> ${message}`;
     }
 
     function hideAlert() {
