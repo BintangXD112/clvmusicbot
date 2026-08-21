@@ -57,6 +57,8 @@ async function startMultiBotSystem() {
 
   // Start Express Web Server
   createWebServer(botOrchestrator);
+
+  console.log(`${LOG_COLORS.green}[SYSTEM] All services initialized successfully. Done!${LOG_COLORS.reset}`);
 }
 
 // ─────────────────────────────────────────────────────────────────────────────

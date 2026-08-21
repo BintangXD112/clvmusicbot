@@ -64,7 +64,9 @@ function createWebServer(orchestrator) {
 
   const port = process.env.PORT || 3000;
   app.listen(port, () => {
+    console.log(`Server listening on port ${port}`);
     console.log(`🌐 [WEB DASHBOARD] Dashboard aktif di http://localhost:${port}`);
+    console.log(`✅ [SYSTEM] Server status: Ready / Online`);
     if (!isConfirmed()) {
       console.log(`\x1b[33m⚠️  [TOTP] SETUP DIPERLUKAN: Buka http://localhost:${port}/login dan scan QR Code!\x1b[0m`);
     }
