@@ -41,8 +41,10 @@ try {
 function createWebServer(orchestrator) {
   const app = express();
 
-  // Trust reverse proxy (nginx, Cloudflare, etc.)
-  app.set('trust proxy', 1);
+  // CATATAN: trust proxy TIDAK diaktifkan secara global di sini karena domainGuard.js
+  // sudah memvalidasi X-Forwarded-Host secara selektif hanya jika Host adalah localhost/127.0.0.1.
+  // Mengaktifkan trust proxy di sini akan membuat Express mempercayai X-Forwarded-Host dari
+  // semua koneksi termasuk IP direct access, yang dapat membypass domain restriction.
 
   app.use(express.json());
   app.use(express.urlencoded({ extended: true }));
@@ -58,9 +60,15 @@ function createWebServer(orchestrator) {
 
   // ── Public Routes & Static Assets ──────────────────────────────────────────
 
-  // Serve static assets first (app.js, style.css, dll)
+  // Serve static assets dengan Cache-Control: no-cache untuk memaksa browser
+  // selalu memeriksa versi terbaru file JS/CSS
   app.use(express.static(path.join(__dirname, '..', 'public'), {
-    index: false
+    index: false,
+    setHeaders: (res, filePath) => {
+      if (filePath.endsWith('.js') || filePath.endsWith('.css')) {
+        res.setHeader('Cache-Control', 'no-cache, must-revalidate');
+      }
+    }
   }));
 
   // Mount Auth Router (login, logout, me, totp status, db status)
