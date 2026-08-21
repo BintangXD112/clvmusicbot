@@ -20,14 +20,16 @@ function normalizeDomain(rawDomain) {
   // Ambil bagian hostname sebelum slash / atau query ?
   str = str.split('/')[0].split('?')[0];
 
-  // Jika terdapat koma (multiple domain), ambil domain pertama yang murni
+  // Jika terdapat koma (multiple domain), ambil domain pertama
   if (str.includes(',')) {
     str = str.split(',')[0].trim();
   }
 
-  // Hapus port number seperti :3000 atau :80 jika ada
+  // Hapus port number seperti :3000 atau :24601 jika ada
   if (str.includes(':')) {
-    str = str.split(':')[0].trim();
+    if (!str.startsWith('[') || str.indexOf(']:') !== -1) {
+      str = str.split(':')[0].trim();
+    }
   }
 
   // Hapus prefix wildcard *. jika ada
@@ -52,17 +54,13 @@ function getAllowedDomain() {
  */
 function getEffectiveHost(req) {
   if (!req || !req.headers) return '';
-
-  let rawHost = req.headers['x-forwarded-host'];
-  if (!rawHost) {
-    rawHost = req.headers.host || req.hostname || '';
-  }
-
+  const rawHost = req.headers.host || req.headers['x-forwarded-host'] || req.hostname || '';
   return normalizeDomain(rawHost);
 }
 
 /**
  * Periksa apakah host yang merequest diizinkan secara eksklusif (Strict Single Domain Match).
+ * Anti-bypass untuk IP:port direct access dan header spoofing.
  * @param {import('express').Request} req - Express request object
  * @returns {boolean}
  */
@@ -80,13 +78,26 @@ function isHostAllowed(req) {
     return false;
   }
 
-  const effectiveHost = getEffectiveHost(req);
-  if (!effectiveHost) {
-    return false;
+  // Ambil murni host yang diakses client via header Host:
+  const hostHeader = normalizeDomain((req.headers && req.headers.host) ? req.headers.host : '');
+
+  // Ambil host dari X-Forwarded-Host jika dari reverse proxy
+  const forwardedHost = normalizeDomain((req.headers && req.headers['x-forwarded-host']) ? req.headers['x-forwarded-host'] : '');
+
+  // 1. Direct request via Host header matching allowedDomain -> PASS
+  if (hostHeader && hostHeader === allowedDomain) {
+    return true;
   }
 
-  // Strict Single Domain Equality check
-  return effectiveHost === allowedDomain;
+  // 2. Request via reverse proxy (Nginx/Cloudflare) di mana Host header backend adalah localhost/127.0.0.1
+  //    dan X-Forwarded-Host dari proxy sesuai allowedDomain -> PASS
+  const isLocalProxyBackend = hostHeader === 'localhost' || hostHeader === '127.0.0.1' || hostHeader === '::1';
+  if (forwardedHost && forwardedHost === allowedDomain && isLocalProxyBackend) {
+    return true;
+  }
+
+  // Akses langsung dari IP (misal http://1.2.3.4:24601) atau domain lain -> DENY
+  return false;
 }
 
 /**
@@ -100,7 +111,7 @@ function domainGuardMiddleware(req, res, next) {
 
     if (!isAllowed) {
       req._domainBlocked = true;
-      req._blockedReason = `Domain '${effectiveHost}' tidak diizinkan. Hanya domain '${allowedDomain || 'Belum diatur'}' yang dapat mengakses Web Panel ini.`;
+      req._blockedReason = `Domain/IP '${effectiveHost}' tidak diizinkan. Hanya domain '${allowedDomain || 'Belum diatur'}' yang dapat mengakses Web Panel ini.`;
 
       // Set Security Headers untuk mencegah caching dan framing halaman blocked
       res.setHeader('X-Frame-Options', 'DENY');
@@ -110,7 +121,7 @@ function domainGuardMiddleware(req, res, next) {
       // Untuk request API, kembalikan respons JSON 403 Forbidden
       if (req.path.startsWith('/api/')) {
         return res.status(403).json({
-          error: `Akses Ditolak: Host '${effectiveHost}' tidak memiliki izin mengakses Web Panel ini. Halaman ini hanya dapat diakses melalui domain: ${allowedDomain || 'Belum diatur'}`,
+          error: `Akses Ditolak: Host/IP '${effectiveHost}' tidak memiliki izin mengakses Web Panel ini. Halaman ini hanya dapat diakses melalui domain: ${allowedDomain || 'Belum diatur'}`,
           host: effectiveHost,
           allowedDomain: allowedDomain,
           domainRestrictionActive: true
@@ -247,10 +258,10 @@ function domainGuardMiddleware(req, res, next) {
               <i class="fa-solid fa-shield-cat"></i>
             </div>
             <h1>403 Access Denied</h1>
-            <p>Web Panel ini dilindungi oleh <strong>Domain Access Security Guard</strong>. Akses dari Host / Domain Anda ditolak total.</p>
+            <p>Web Panel ini dilindungi oleh <strong>Domain Access Security Guard</strong>. Akses dari Host / IP Anda ditolak total.</p>
 
             <div class="host-box">
-              <span class="host-label">Host / Domain yang Anda Akses:</span>
+              <span class="host-label">Host / IP yang Anda Akses:</span>
               <span class="host-code">${effectiveHost}</span>
             </div>
 

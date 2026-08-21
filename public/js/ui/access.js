@@ -8,8 +8,8 @@ var accessStatusFilter = 'ALL';
 var accessSearchQuery = '';
 var accessPollInterval = null;
 
-/** Helper sanitasi HTML */
-function escapeHtml(str) {
+/** Helper sanitasi HTML yang aman dari ReferenceError */
+function safeEscape(str) {
   if (!str) return '';
   return String(str)
     .replace(/&/g, '&amp;')
@@ -17,8 +17,10 @@ function escapeHtml(str) {
     .replace(/>/g, '&gt;')
     .replace(/"/g, '&quot;');
 }
+var escapeHtml = safeEscape;
 if (typeof window !== 'undefined') {
-  window.escapeHtml = escapeHtml;
+  window.escapeHtml = safeEscape;
+  window.safeEscape = safeEscape;
 }
 
 /**
@@ -175,18 +177,18 @@ function renderAccessLogs() {
     html += `
       <tr>
         <td class="font-mono text-dim" style="white-space: nowrap;">${timeStr}</td>
-        <td class="font-mono" style="font-weight: 500;">${escapeHtml(item.ip)}</td>
-        <td style="max-width: 150px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" title="${escapeHtml(item.host)}">${escapeHtml(item.host)}</td>
+        <td class="font-mono" style="font-weight: 500;">${safeEscape(item.ip)}</td>
+        <td style="max-width: 150px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" title="${safeEscape(item.host)}">${safeEscape(item.host)}</td>
         <td>
           <span style="font-weight: 700; color: ${methodColor}; font-size: 0.75rem; margin-right: 6px;">${item.method}</span>
-          <span class="font-mono" style="font-size: 0.82rem;" title="${escapeHtml(item.path)}">${escapeHtml(item.path)}</span>
+          <span class="font-mono" style="font-size: 0.82rem;" title="${safeEscape(item.path)}">${safeEscape(item.path)}</span>
         </td>
         <td>
           <span class="badge ${statusBadgeClass}">${item.status}</span>
         </td>
         <td>${accessStateBadge}</td>
-        <td style="max-width: 200px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--text-dim); font-size: 0.78rem;" title="${escapeHtml(item.userAgent)}">
-          ${escapeHtml(item.userAgent)}
+        <td style="max-width: 200px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--text-dim); font-size: 0.78rem;" title="${safeEscape(item.userAgent)}">
+          ${safeEscape(item.userAgent)}
         </td>
       </tr>
     `;
