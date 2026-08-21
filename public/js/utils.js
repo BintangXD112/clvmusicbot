@@ -26,6 +26,10 @@ function esc(str) {
     .replace(/"/g, '&quot;');
 }
 
+function escapeHtml(str) {
+  return esc(str);
+}
+
 /** Set innerText elemen berdasarkan ID. */
 function setText(id, val) {
   var el = document.getElementById(id);
