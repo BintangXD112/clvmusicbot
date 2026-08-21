@@ -5,3 +5,6 @@ bots.json
 *.log
 .sessions/
 .npm/
+.access_logs.json
+bot.rar
+

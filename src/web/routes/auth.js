@@ -8,7 +8,6 @@ const express = require('express');
 const path    = require('path');
 const { requireAuth }                                           = require('../middleware');
 const { verifyTOTP, confirmSetup, isConfirmed, getQrCodeDataUrl } = require('../../totp');
-const { isDbConnected }                                         = require('../../db');
 
 const router = express.Router();
 
@@ -25,7 +24,7 @@ router.get('/api/totp-status', async (req, res) => {
   const confirmed = isConfirmed();
   let qrCode = null;
   if (!confirmed) qrCode = await getQrCodeDataUrl();
-  res.json({ confirmed, qrCode, dbConnected: isDbConnected() });
+  res.json({ confirmed, qrCode, dbConnected: false });
 });
 
 // Login via TOTP
@@ -64,7 +63,7 @@ router.post('/api/logout', (req, res) => {
 
 // Status DB (public info)
 router.get('/api/db-status', (req, res) => {
-  res.json({ mysqlConnected: isDbConnected(), database: process.env.DB_NAME || '' });
+  res.json({ mysqlConnected: false, database: '' });
 });
 
 // ── Protected routes ──────────────────────────────────────────────────────────

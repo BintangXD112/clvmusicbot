@@ -11,221 +11,408 @@
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
-  <div class="app-container">
-    <!-- Header -->
-    <header class="app-header">
-      <div class="header-brand">
+  <div class="app-layout">
+    <!-- Overlay untuk Sidebar di Layar Kecil -->
+    <div class="sidebar-overlay" id="sidebar-overlay" onclick="toggleSidebar()"></div>
+
+    <!-- Sidebar Navigation -->
+    <aside class="app-sidebar" id="app-sidebar">
+      <div class="sidebar-header">
         <div class="logo-icon">
           <i class="fa-solid fa-robot"></i>
         </div>
         <div class="brand-text">
-          <h1>Discord AFK Control Center</h1>
-          <p class="subtitle">Full Server Monitoring & Bot Management</p>
+          <h2>Discord AFK</h2>
+          <span class="version-tag">Control Center</span>
         </div>
       </div>
-      
-      <div class="header-actions">
-        <div class="connection-status" id="live-indicator">
-          <span class="pulse-dot"></span>
-          <span class="status-text">SSE Live Telemetry</span>
+
+      <nav class="sidebar-menu">
+        <div class="menu-label">Navigasi Utama</div>
+        <a href="#dashboard" class="sidebar-item active" id="nav-dashboard" onclick="switchPage('dashboard'); return false;">
+          <i class="fa-solid fa-chart-line"></i>
+          <span>Dashboard Utama</span>
+        </a>
+        <a href="#domain-access" class="sidebar-item" id="nav-access" onclick="switchPage('domain-access'); return false;">
+          <i class="fa-solid fa-shield-halved"></i>
+          <span>Akses Domain & Logs</span>
+        </a>
+      </nav>
+
+      <div class="sidebar-footer">
+        <div class="sidebar-status-box">
+          <div class="status-indicator-dot"></div>
+          <div class="status-info">
+            <span class="status-title">System Protected</span>
+            <span class="status-desc">TOTP 2FA Active</span>
+          </div>
+        </div>
+        <button class="btn btn-danger btn-block" onclick="logoutUser()" title="Keluar / Logout">
+          <i class="fa-solid fa-right-from-bracket"></i> Logout
+        </button>
+      </div>
+    </aside>
+
+    <!-- Main Workspace Area -->
+    <main class="main-workspace">
+      <!-- Workspace Header -->
+      <header class="app-header">
+        <div class="header-left">
+          <button class="btn-sidebar-toggle" onclick="toggleSidebar()" title="Toggle Menu">
+            <i class="fa-solid fa-bars"></i>
+          </button>
+          <div class="page-title-box">
+            <h1 id="page-title-heading">Dashboard Utama</h1>
+            <p class="subtitle" id="page-title-sub">Full Server Monitoring & Bot Management</p>
+          </div>
         </div>
         
-        <div class="connection-status" style="background: rgba(16, 185, 129, 0.1); border-color: rgba(16, 185, 129, 0.2); color: var(--success);">
-          <i class="fa-solid fa-shield-halved"></i>
-          <span>TOTP Secured</span>
-        </div>
-
-        <button class="btn btn-secondary" onclick="fetchData()">
-          <i class="fa-solid fa-arrows-rotate"></i> Refresh
-        </button>
-        <button class="btn btn-warning" onclick="restartAllBots()">
-          <i class="fa-solid fa-power-off"></i> Restart All
-        </button>
-        <button class="btn btn-primary" onclick="openAddBotModal()">
-          <i class="fa-solid fa-plus"></i> Tambah Bot
-        </button>
-        <button class="btn btn-secondary" onclick="openSettingsModal()">
-          <i class="fa-solid fa-gear"></i> Settings
-        </button>
-        <button class="btn btn-danger btn-sm" onclick="logoutUser()" title="Keluar / Logout">
-          <i class="fa-solid fa-right-from-bracket"></i>
-        </button>
-      </div>
-    </header>
-
-    <!-- Main Dashboard Metrics -->
-    <section class="metrics-grid">
-      <!-- CPU Metric Card -->
-      <div class="metric-card">
-        <div class="metric-header">
-          <div class="metric-icon cpu-icon">
-            <i class="fa-solid fa-microchip"></i>
+        <div class="header-actions">
+          <div class="connection-status" id="live-indicator">
+            <span class="pulse-dot"></span>
+            <span class="status-text">SSE Live Telemetry</span>
           </div>
-          <span class="metric-title">CPU Load</span>
-        </div>
-        <div class="metric-body">
-          <div class="metric-value" id="cpu-usage">0%</div>
-          <div class="progress-bar">
-            <div class="progress-fill cpu-fill" id="cpu-bar" style="width: 0%"></div>
-          </div>
-        </div>
-        <div class="metric-footer">
-          <span id="cpu-model"><i class="fa-solid fa-info-circle"></i> Loading CPU...</span>
-          <span id="cpu-cores">0 Cores</span>
-        </div>
-      </div>
 
-      <!-- Memory Metric Card -->
-      <div class="metric-card">
-        <div class="metric-header">
-          <div class="metric-icon ram-icon">
-            <i class="fa-solid fa-memory"></i>
-          </div>
-          <span class="metric-title">RAM Usage</span>
-        </div>
-        <div class="metric-body">
-          <div class="metric-value" id="ram-usage">0%</div>
-          <div class="progress-bar">
-            <div class="progress-fill ram-fill" id="ram-bar" style="width: 0%"></div>
-          </div>
-        </div>
-        <div class="metric-footer">
-          <span id="ram-detail">0 GB / 0 GB</span>
-          <span id="process-ram">Heap: 0 MB</span>
-        </div>
-      </div>
-
-      <!-- System Uptime Card -->
-      <div class="metric-card">
-        <div class="metric-header">
-          <div class="metric-icon uptime-icon">
-            <i class="fa-solid fa-clock"></i>
-          </div>
-          <span class="metric-title">Server Uptime</span>
-        </div>
-        <div class="metric-body">
-          <div class="metric-value font-mono" id="process-uptime">00d 00h 00m</div>
-          <div class="sub-value" id="os-uptime">OS Uptime: 0d 0h</div>
-        </div>
-        <div class="metric-footer">
-          <span id="os-info"><i class="fa-solid fa-server"></i> System</span>
-          <span id="node-version">Node.js</span>
-        </div>
-      </div>
-
-      <!-- Bot Network Status Card -->
-      <div class="metric-card">
-        <div class="metric-header">
-          <div class="metric-icon bots-icon">
-            <i class="fa-solid fa-network-wired"></i>
-          </div>
-          <span class="metric-title">Bots Overview</span>
-        </div>
-        <div class="metric-body">
-          <div class="metric-value" id="bot-count-text">0 / 0</div>
-          <div class="sub-value text-success" id="bot-vc-summary">0 Bot di Voice Channel</div>
-        </div>
-        <div class="metric-footer">
-          <span id="overall-status">System Operational</span>
-          <span id="avg-ping">Ping: -- ms</span>
-        </div>
-      </div>
-    </section>
-
-    <!-- GPU Metric Card (row below, full width style) -->
-    <section class="section-container" style="padding: 0; background: transparent; border: none; box-shadow: none; margin-top: 0;">
-      <div class="metrics-grid" id="gpu-metrics-container">
-        <!-- Rendered dynamically by app.js when GPU data is available -->
-      </div>
-    </section>
-
-    <!-- Bulk Actions Section -->
-    <section class="section-container">
-      <div class="section-header">
-        <h2><i class="fa-solid fa-layer-group"></i> Bulk Actions (Aksi Massal)</h2>
-      </div>
-      <div style="display: flex; gap: 10px; flex-wrap: wrap;">
-        <button class="btn btn-secondary" onclick="bulkToggleVoiceState('mute')">
-          <i class="fa-solid fa-microphone-slash"></i> Mute All
-        </button>
-        <button class="btn btn-secondary" onclick="bulkToggleVoiceState('unmute')">
-          <i class="fa-solid fa-microphone"></i> Unmute All
-        </button>
-        <button class="btn btn-secondary" onclick="bulkToggleVoiceState('deafen')">
-          <i class="fa-solid fa-headphones-simple"></i> Deafen All
-        </button>
-        <button class="btn btn-secondary" onclick="bulkToggleVoiceState('undeafen')">
-          <i class="fa-solid fa-headphones"></i> Undeafen All
-        </button>
-        <button class="btn btn-secondary" onclick="bulkToggleVoiceState('reconnect')">
-          <i class="fa-solid fa-arrows-rotate"></i> Reconnect All
-        </button>
-        <button class="btn btn-primary" onclick="openBulkMoveModal()">
-          <i class="fa-solid fa-arrow-right-to-city"></i> Bulk Move VC
-        </button>
-      </div>
-    </section>
-
-    <!-- Bot Instances Section -->
-    <section class="section-container">
-      <div class="section-header">
-        <h2><i class="fa-solid fa-users-gear"></i> Bot Instance Management</h2>
-        <div class="section-controls">
-          <span class="badge badge-info" id="active-bots-badge">0 Bots Active</span>
-        </div>
-      </div>
-
-      <div class="bots-grid" id="bots-grid-container">
-        <!-- Rendered dynamically by app.js -->
-        <div class="loading-spinner">
-          <i class="fa-solid fa-circle-notch fa-spin"></i> Memuat data bot...
-        </div>
-      </div>
-    </section>
-
-    <!-- Live Console Terminal -->
-    <section class="section-container">
-      <div class="section-header">
-        <h2><i class="fa-solid fa-terminal"></i> Live Console Logs</h2>
-        <div class="terminal-actions">
-          <div class="filter-buttons">
-            <button class="filter-btn active" data-level="ALL" onclick="filterLogs('ALL')">All</button>
-            <button class="filter-btn text-cyan" data-level="INFO" onclick="filterLogs('INFO')">Info</button>
-            <button class="filter-btn text-success" data-level="SUCCESS" onclick="filterLogs('SUCCESS')">Success</button>
-            <button class="filter-btn text-warning" data-level="WARN" onclick="filterLogs('WARN')">Warn</button>
-            <button class="filter-btn text-danger" data-level="ERROR" onclick="filterLogs('ERROR')">Error</button>
-          </div>
-          <input type="text" id="log-search" placeholder="Cari log..." oninput="filterLogs()" class="input-sm">
-          <button class="btn btn-sm btn-secondary" onclick="exportLogs()" title="Download Logs">
-            <i class="fa-solid fa-file-arrow-down"></i> Export
+          <button class="btn btn-secondary" onclick="fetchData()">
+            <i class="fa-solid fa-arrows-rotate"></i> Refresh
           </button>
-          <button class="btn btn-sm btn-secondary" onclick="clearTerminal()">
-            <i class="fa-solid fa-trash-can"></i> Clear
+          <button class="btn btn-warning" onclick="restartAllBots()">
+            <i class="fa-solid fa-power-off"></i> Restart All
+          </button>
+          <button class="btn btn-primary" onclick="openAddBotModal()">
+            <i class="fa-solid fa-plus"></i> Tambah Bot
+          </button>
+          <button class="btn btn-secondary" onclick="openSettingsModal()">
+            <i class="fa-solid fa-gear"></i> Settings
           </button>
         </div>
+      </header>
+
+      <!-- PAGE 1: Dashboard Utama -->
+      <div id="page-dashboard" class="page-view active">
+        <!-- Main Dashboard Metrics -->
+        <section class="metrics-grid">
+          <!-- CPU Metric Card -->
+          <div class="metric-card">
+            <div class="metric-header">
+              <div class="metric-icon cpu-icon">
+                <i class="fa-solid fa-microchip"></i>
+              </div>
+              <span class="metric-title">CPU Load</span>
+            </div>
+            <div class="metric-body">
+              <div class="metric-value" id="cpu-usage">0%</div>
+              <div class="progress-bar">
+                <div class="progress-fill cpu-fill" id="cpu-bar" style="width: 0%"></div>
+              </div>
+            </div>
+            <div class="metric-footer">
+              <span id="cpu-model"><i class="fa-solid fa-info-circle"></i> Loading CPU...</span>
+              <span id="cpu-cores">0 Cores</span>
+            </div>
+          </div>
+
+          <!-- Memory Metric Card -->
+          <div class="metric-card">
+            <div class="metric-header">
+              <div class="metric-icon ram-icon">
+                <i class="fa-solid fa-memory"></i>
+              </div>
+              <span class="metric-title">RAM Usage</span>
+            </div>
+            <div class="metric-body">
+              <div class="metric-value" id="ram-usage">0%</div>
+              <div class="progress-bar">
+                <div class="progress-fill ram-fill" id="ram-bar" style="width: 0%"></div>
+              </div>
+            </div>
+            <div class="metric-footer">
+              <span id="ram-detail">0 GB / 0 GB</span>
+              <span id="process-ram">Heap: 0 MB</span>
+            </div>
+          </div>
+
+          <!-- System Uptime Card -->
+          <div class="metric-card">
+            <div class="metric-header">
+              <div class="metric-icon uptime-icon">
+                <i class="fa-solid fa-clock"></i>
+              </div>
+              <span class="metric-title">Server Uptime</span>
+            </div>
+            <div class="metric-body">
+              <div class="metric-value font-mono" id="process-uptime">00d 00h 00m</div>
+              <div class="sub-value" id="os-uptime">OS Uptime: 0d 0h</div>
+            </div>
+            <div class="metric-footer">
+              <span id="os-info"><i class="fa-solid fa-server"></i> System</span>
+              <span id="node-version">Node.js</span>
+            </div>
+          </div>
+
+          <!-- Bot Network Status Card -->
+          <div class="metric-card">
+            <div class="metric-header">
+              <div class="metric-icon bots-icon">
+                <i class="fa-solid fa-network-wired"></i>
+              </div>
+              <span class="metric-title">Bots Overview</span>
+            </div>
+            <div class="metric-body">
+              <div class="metric-value" id="bot-count-text">0 / 0</div>
+              <div class="sub-value text-success" id="bot-vc-summary">0 Bot di Voice Channel</div>
+            </div>
+            <div class="metric-footer">
+              <span id="overall-status">System Operational</span>
+              <span id="avg-ping">Ping: -- ms</span>
+            </div>
+          </div>
+        </section>
+
+        <!-- GPU Metric Card -->
+        <section class="section-container" style="padding: 0; background: transparent; border: none; box-shadow: none; margin-top: 0;">
+          <div class="metrics-grid" id="gpu-metrics-container">
+            <!-- Rendered dynamically by app.js when GPU data is available -->
+          </div>
+        </section>
+
+        <!-- Bulk Actions Section -->
+        <section class="section-container">
+          <div class="section-header">
+            <h2><i class="fa-solid fa-layer-group"></i> Bulk Actions (Aksi Massal)</h2>
+          </div>
+          <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+            <button class="btn btn-secondary" onclick="bulkToggleVoiceState('mute')">
+              <i class="fa-solid fa-microphone-slash"></i> Mute All
+            </button>
+            <button class="btn btn-secondary" onclick="bulkToggleVoiceState('unmute')">
+              <i class="fa-solid fa-microphone"></i> Unmute All
+            </button>
+            <button class="btn btn-secondary" onclick="bulkToggleVoiceState('deafen')">
+              <i class="fa-solid fa-headphones-simple"></i> Deafen All
+            </button>
+            <button class="btn btn-secondary" onclick="bulkToggleVoiceState('undeafen')">
+              <i class="fa-solid fa-headphones"></i> Undeafen All
+            </button>
+            <button class="btn btn-secondary" onclick="bulkToggleVoiceState('reconnect')">
+              <i class="fa-solid fa-arrows-rotate"></i> Reconnect All
+            </button>
+            <button class="btn btn-primary" onclick="openBulkMoveModal()">
+              <i class="fa-solid fa-arrow-right-to-city"></i> Bulk Move VC
+            </button>
+          </div>
+        </section>
+
+        <!-- Bot Instances Section -->
+        <section class="section-container">
+          <div class="section-header">
+            <h2><i class="fa-solid fa-users-gear"></i> Bot Instance Management</h2>
+            <div class="section-controls">
+              <span class="badge badge-info" id="active-bots-badge">0 Bots Active</span>
+            </div>
+          </div>
+
+          <div class="bots-grid" id="bots-grid-container">
+            <div class="loading-spinner">
+              <i class="fa-solid fa-circle-notch fa-spin"></i> Memuat data bot...
+            </div>
+          </div>
+        </section>
+
+        <!-- Live Console Terminal -->
+        <section class="section-container">
+          <div class="section-header">
+            <h2><i class="fa-solid fa-terminal"></i> Live Console Logs</h2>
+            <div class="terminal-actions">
+              <div class="filter-buttons">
+                <button class="filter-btn active" data-level="ALL" onclick="filterLogs('ALL')">All</button>
+                <button class="filter-btn text-cyan" data-level="INFO" onclick="filterLogs('INFO')">Info</button>
+                <button class="filter-btn text-success" data-level="SUCCESS" onclick="filterLogs('SUCCESS')">Success</button>
+                <button class="filter-btn text-warning" data-level="WARN" onclick="filterLogs('WARN')">Warn</button>
+                <button class="filter-btn text-danger" data-level="ERROR" onclick="filterLogs('ERROR')">Error</button>
+              </div>
+              <input type="text" id="log-search" placeholder="Cari log..." oninput="filterLogs()" class="input-sm">
+              <button class="btn btn-sm btn-secondary" onclick="exportLogs()" title="Download Logs">
+                <i class="fa-solid fa-file-arrow-down"></i> Export
+              </button>
+              <button class="btn btn-sm btn-secondary" onclick="clearTerminal()">
+                <i class="fa-solid fa-trash-can"></i> Clear
+              </button>
+            </div>
+          </div>
+
+          <div class="terminal-window">
+            <div class="terminal-header">
+              <div class="terminal-dots">
+                <span class="dot red"></span>
+                <span class="dot yellow"></span>
+                <span class="dot green"></span>
+              </div>
+              <span class="terminal-title">System Log Feed (Real-Time SSE)</span>
+              <label class="auto-scroll-label">
+                <input type="checkbox" id="auto-scroll-check" checked> Auto-Scroll
+              </label>
+            </div>
+            <div class="terminal-body" id="log-container">
+              <div class="log-entry info">
+                <span class="log-time">[--:--:--]</span>
+                <span class="log-tag">[SYSTEM]</span>
+                <span class="log-message">Menghubungkan ke SSE live feed...</span>
+              </div>
+            </div>
+          </div>
+        </section>
       </div>
 
-      <div class="terminal-window">
-        <div class="terminal-header">
-          <div class="terminal-dots">
-            <span class="dot red"></span>
-            <span class="dot yellow"></span>
-            <span class="dot green"></span>
+      <!-- PAGE 2: Akses Domain & Security Logs -->
+      <div id="page-access" class="page-view" style="display: none;">
+        <!-- Domain Security Configuration Card -->
+        <section class="section-container">
+          <div class="section-header">
+            <h2><i class="fa-solid fa-globe"></i> Pengaturan Domain Akses Web Panel (Domain Origin Guard)</h2>
           </div>
-          <span class="terminal-title">System Log Feed (Real-Time SSE)</span>
-          <label class="auto-scroll-label">
-            <input type="checkbox" id="auto-scroll-check" checked> Auto-Scroll
-          </label>
-        </div>
-        <div class="terminal-body" id="log-container">
-          <div class="log-entry info">
-            <span class="log-time">[--:--:--]</span>
-            <span class="log-tag">[SYSTEM]</span>
-            <span class="log-message">Menghubungkan ke SSE live feed...</span>
+
+          <div class="domain-config-card">
+            <div class="domain-info-alert">
+              <div class="alert-icon"><i class="fa-solid fa-shield-cat"></i></div>
+              <div class="alert-content">
+                <h3>Keamanan Restriksi Domain (Origin Host Restriction)</h3>
+                <p>Batasi akses ke Web Panel ini hanya dari domain atau IP address tertentu. Permintaan dari Host yang tidak terdaftar akan ditolak dengan respons <strong>403 Forbidden</strong>.</p>
+                <div class="current-host-info">
+                  <span>Host / Domain Anda saat ini:</span>
+                  <code id="current-host-badge" class="host-code">--</code>
+                </div>
+              </div>
+            </div>
+
+            <div class="form-group checkbox-group" style="margin-top: 16px;">
+              <label class="custom-checkbox switch-label">
+                <input type="checkbox" id="domain-guard-enabled">
+                <span class="checkmark"></span>
+                <strong>Aktifkan Batasan Domain Akses (Domain Origin Guard)</strong>
+              </label>
+            </div>
+
+            <div class="form-group" style="margin-top: 14px;">
+              <label for="allowed-domains-input">
+                <i class="fa-solid fa-list-check"></i> Daftar Domain yang Diizinkan (ALLOWED_DOMAINS):
+              </label>
+              <input type="text" id="allowed-domains-input" class="form-control" placeholder="Contoh: panel.botkamu.com, bot.domainanda.id, localhost:24601">
+              <small style="color: var(--text-muted); margin-top: 6px; display: block;">
+                <i class="fa-solid fa-info-circle"></i> Pisahkan dengan koma jika lebih dari satu. Dukungan wildcard domain (misal: <code>*.domainanda.id</code>) atau gunakan <code>*</code> untuk mengizinkan semua domain.
+              </small>
+            </div>
+
+            <div class="caution-box">
+              <i class="fa-solid fa-triangle-exclamation"></i>
+              <span><strong>PERINGATAN:</strong> Pastikan domain atau IP yang sedang Anda gunakan saat ini terdaftar di atas sebelum mengaktifkan fitur ini agar akun Anda tidak terkunci dari panel.</span>
+            </div>
+
+            <div style="margin-top: 20px; display: flex; justify-content: flex-end;">
+              <button class="btn btn-primary" onclick="saveDomainSettings()">
+                <i class="fa-solid fa-floppy-disk"></i> Simpan Pengaturan Domain
+              </button>
+            </div>
           </div>
-        </div>
+        </section>
+
+        <!-- Access Logs Metric Summary Cards -->
+        <section class="metrics-grid" style="margin-top: 24px;">
+          <div class="metric-card">
+            <div class="metric-header">
+              <div class="metric-icon cpu-icon"><i class="fa-solid fa-server"></i></div>
+              <span class="metric-title">Total Requests</span>
+            </div>
+            <div class="metric-body">
+              <div class="metric-value" id="access-stat-total">0</div>
+              <div class="sub-value">Total Request Terekam</div>
+            </div>
+          </div>
+
+          <div class="metric-card">
+            <div class="metric-header">
+              <div class="metric-icon uptime-icon"><i class="fa-solid fa-circle-check"></i></div>
+              <span class="metric-title">Allowed Access</span>
+            </div>
+            <div class="metric-body">
+              <div class="metric-value text-success" id="access-stat-allowed">0</div>
+              <div class="sub-value">Status 2xx / Sukses</div>
+            </div>
+          </div>
+
+          <div class="metric-card">
+            <div class="metric-header">
+              <div class="metric-icon bots-icon" style="background: rgba(239, 68, 68, 0.15); color: #f87171;"><i class="fa-solid fa-ban"></i></div>
+              <span class="metric-title">Blocked Requests (403)</span>
+            </div>
+            <div class="metric-body">
+              <div class="metric-value text-danger" id="access-stat-blocked">0</div>
+              <div class="sub-value">Ditolak Restriksi Domain</div>
+            </div>
+          </div>
+
+          <div class="metric-card">
+            <div class="metric-header">
+              <div class="metric-icon ram-icon" style="background: rgba(245, 158, 11, 0.15); color: #fbbf24;"><i class="fa-solid fa-triangle-exclamation"></i></div>
+              <span class="metric-title">Errors / Unauthorized</span>
+            </div>
+            <div class="metric-body">
+              <div class="metric-value text-warning" id="access-stat-error">0</div>
+              <div class="sub-value">Status 4xx / 5xx Lainnya</div>
+            </div>
+          </div>
+        </section>
+
+        <!-- Access Logs Table Section -->
+        <section class="section-container" style="margin-top: 24px;">
+          <div class="section-header">
+            <h2><i class="fa-solid fa-list-ol"></i> Riwayat HTTP Access Logs Lengkap</h2>
+            <div class="terminal-actions">
+              <div class="filter-buttons">
+                <button class="filter-btn access-filter-btn active" onclick="setAccessStatusFilter('ALL', this)">All</button>
+                <button class="filter-btn access-filter-btn text-success" onclick="setAccessStatusFilter('2xx', this)">2xx OK</button>
+                <button class="filter-btn access-filter-btn text-danger" onclick="setAccessStatusFilter('403', this)">403 Blocked</button>
+                <button class="filter-btn access-filter-btn text-warning" onclick="setAccessStatusFilter('4xx', this)">4xx Error</button>
+                <button class="filter-btn access-filter-btn text-danger" onclick="setAccessStatusFilter('5xx', this)">5xx Server</button>
+              </div>
+              <input type="text" id="access-log-search" placeholder="Cari IP, Host, Path..." oninput="onAccessSearchInput(this.value)" class="input-sm">
+              <button class="btn btn-sm btn-secondary" onclick="exportAccessLogs('csv')" title="Export CSV">
+                <i class="fa-solid fa-file-csv"></i> CSV
+              </button>
+              <button class="btn btn-sm btn-secondary" onclick="exportAccessLogs('json')" title="Export JSON">
+                <i class="fa-solid fa-file-code"></i> JSON
+              </button>
+              <button class="btn btn-sm btn-danger" onclick="clearAccessLogsData()">
+                <i class="fa-solid fa-trash"></i> Clear Logs
+              </button>
+            </div>
+          </div>
+
+          <div class="access-table-container">
+            <table class="access-table">
+              <thead>
+                <tr>
+                  <th>Waktu</th>
+                  <th>Client IP</th>
+                  <th>Host / Domain</th>
+                  <th>Method &amp; Path</th>
+                  <th>Status</th>
+                  <th>Akses Status</th>
+                  <th>User-Agent / Device</th>
+                </tr>
+              </thead>
+              <tbody id="access-logs-tbody">
+                <tr>
+                  <td colspan="7" style="text-align: center; color: var(--text-muted); padding: 24px;">
+                    <i class="fa-solid fa-circle-notch fa-spin"></i> Memuat access log...
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </section>
       </div>
-    </section>
+    </main>
   </div>
 
   <!-- Modal: Move Bot Voice Channel -->
@@ -395,6 +582,7 @@
   <script src="js/ui/modals.js"></script>
   <script src="js/ui/settings.js"></script>
   <script src="js/ui/bulk.js"></script>
+  <script src="js/ui/access.js"></script>
   <script src="js/sse.js"></script>
   <script src="app.js"></script>
 </body>

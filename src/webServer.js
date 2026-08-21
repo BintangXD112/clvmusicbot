@@ -8,17 +8,17 @@
 const express = require('express');
 const path    = require('path');
 
-const { initDb }                       = require('./db');
 const { isConfirmed }                  = require('./totp');
 const { createSessionMiddleware }      = require('./web/middleware');
+const { accessLoggerMiddleware }       = require('./web/accessLogger');
+const { domainGuardMiddleware }        = require('./web/domainGuard');
 const authRouter                       = require('./web/routes/auth');
 const createBotsRouter                 = require('./web/routes/bots');
 const createSystemRouter               = require('./web/routes/system');
+const accessRouter                     = require('./web/routes/access');
 const createSSERouter                  = require('./web/sse');
 
 function createWebServer(orchestrator) {
-  initDb();
-
   const app = express();
 
   // Trust reverse proxy (nginx, Cloudflare, etc.)
@@ -29,6 +29,12 @@ function createWebServer(orchestrator) {
 
   // Session middleware
   app.use(createSessionMiddleware());
+
+  // Access Logging Middleware (Catat semua HTTP request)
+  app.use(accessLoggerMiddleware);
+
+  // Domain Security Guard Middleware (Filter domain akses)
+  app.use(domainGuardMiddleware);
 
   // ── Public Routes & Static Assets ──────────────────────────────────────────
 
@@ -41,6 +47,9 @@ function createWebServer(orchestrator) {
   app.use('/', authRouter);
 
   // ── Protected REST & SSE APIs ──────────────────────────────────────────────
+
+  // Mount Domain Access Control & Access Logs API
+  app.use('/api/access', accessRouter);
 
   // Mount Bots API (createBotsRouter returns a configured router)
   app.use('/api/bots', createBotsRouter(orchestrator));
