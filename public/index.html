@@ -37,6 +37,10 @@
           <i class="fa-solid fa-shield-halved"></i>
           <span>Akses Domain & Logs</span>
         </a>
+        <a href="#version-control" class="sidebar-item" id="nav-updater" onclick="switchPage('version-control'); return false;">
+          <i class="fa-brands fa-github"></i>
+          <span>Version Control</span>
+        </a>
       </nav>
 
       <div class="sidebar-footer">
@@ -369,13 +373,19 @@
             <h2><i class="fa-solid fa-list-ol"></i> Riwayat HTTP Access Logs Lengkap</h2>
             <div class="terminal-actions">
               <div class="filter-buttons">
+                <button class="filter-btn access-client-btn active" onclick="setAccessClientFilter('all', this)" title="Semua Sumber Klien"><i class="fa-solid fa-layer-group"></i> Semua</button>
+                <button class="filter-btn access-client-btn" onclick="setAccessClientFilter('desktop', this)" style="color: #c084fc;" title="Akses dari Desktop App"><i class="fa-solid fa-desktop"></i> Desktop</button>
+                <button class="filter-btn access-client-btn" onclick="setAccessClientFilter('web', this)" style="color: #38bdf8;" title="Akses dari Browser WebApp"><i class="fa-solid fa-globe"></i> WebApp</button>
+                <button class="filter-btn access-client-btn" onclick="setAccessClientFilter('mobile', this)" style="color: #fbbf24;" title="Akses dari Mobile Browser"><i class="fa-solid fa-mobile-screen-button"></i> Mobile</button>
+              </div>
+              <div class="filter-buttons">
                 <button class="filter-btn access-filter-btn active" onclick="setAccessStatusFilter('ALL', this)">All</button>
                 <button class="filter-btn access-filter-btn text-success" onclick="setAccessStatusFilter('2xx', this)">2xx OK</button>
                 <button class="filter-btn access-filter-btn text-danger" onclick="setAccessStatusFilter('403', this)">403 Blocked</button>
                 <button class="filter-btn access-filter-btn text-warning" onclick="setAccessStatusFilter('4xx', this)">4xx Error</button>
                 <button class="filter-btn access-filter-btn text-danger" onclick="setAccessStatusFilter('5xx', this)">5xx Server</button>
               </div>
-              <input type="text" id="access-log-search" placeholder="Cari IP, Host, Path..." oninput="onAccessSearchInput(this.value)" class="input-sm">
+              <input type="text" id="access-log-search" placeholder="Cari IP, Host, Path, Klien..." oninput="onAccessSearchInput(this.value)" class="input-sm">
               <button class="btn btn-sm btn-secondary" onclick="exportAccessLogs('csv')" title="Export CSV">
                 <i class="fa-solid fa-file-csv"></i> CSV
               </button>
@@ -393,17 +403,18 @@
               <thead>
                 <tr>
                   <th>Waktu</th>
+                  <th>Klien / Sumber</th>
                   <th>Client IP</th>
                   <th>Host / Domain</th>
                   <th>Method &amp; Path</th>
                   <th>Status</th>
                   <th>Akses Status</th>
-                  <th>User-Agent / Device</th>
+                  <th>User-Agent / OS</th>
                 </tr>
               </thead>
               <tbody id="access-logs-tbody">
                 <tr>
-                  <td colspan="7" style="text-align: center; color: var(--text-muted); padding: 24px;">
+                  <td colspan="8" style="text-align: center; color: var(--text-muted); padding: 24px;">
                     <i class="fa-solid fa-circle-notch fa-spin"></i> Memuat access log...
                   </td>
                 </tr>
@@ -411,6 +422,176 @@
             </table>
           </div>
         </section>
+      </div>
+
+      <!-- PAGE 3: Version Control & Update -->
+      <div id="page-updater" class="page-view" style="display: none; flex-direction: column;">
+
+        <!-- Header Stats Row -->
+        <section class="metrics-grid" style="grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));">
+
+          <div class="metric-card">
+            <div class="metric-header">
+              <div class="metric-icon" style="background: rgba(99,102,241,0.15); color: #818cf8;">
+                <i class="fa-solid fa-code-branch"></i>
+              </div>
+              <span class="metric-title">Branch Aktif</span>
+            </div>
+            <div class="metric-body">
+              <div class="metric-value font-mono" id="upd-branch" style="font-size: 1.4rem;">—</div>
+              <div class="sub-value">Current Git Branch</div>
+            </div>
+          </div>
+
+          <div class="metric-card">
+            <div class="metric-header">
+              <div class="metric-icon" style="background: rgba(6,182,212,0.15); color: #22d3ee;">
+                <i class="fa-solid fa-code-commit"></i>
+              </div>
+              <span class="metric-title">Commit Saat Ini</span>
+            </div>
+            <div class="metric-body">
+              <div class="metric-value font-mono" id="upd-hash" style="font-size: 1.4rem;">—</div>
+              <div class="sub-value" id="upd-msg" style="font-size: 0.8rem; max-width: 200px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">—</div>
+            </div>
+          </div>
+
+          <div class="metric-card">
+            <div class="metric-header">
+              <div class="metric-icon" style="background: rgba(16,185,129,0.15); color: #34d399;">
+                <i class="fa-solid fa-user-pen"></i>
+              </div>
+              <span class="metric-title">Last Commit By</span>
+            </div>
+            <div class="metric-body">
+              <div class="metric-value" id="upd-author" style="font-size: 1.1rem;">—</div>
+              <div class="sub-value" id="upd-date">—</div>
+            </div>
+          </div>
+
+          <div class="metric-card" id="update-status-card">
+            <div class="metric-header">
+              <div class="metric-icon" style="background: rgba(139,92,246,0.15); color: #c084fc;">
+                <i class="fa-brands fa-github"></i>
+              </div>
+              <span class="metric-title">Update Status</span>
+            </div>
+            <div class="metric-body">
+              <div id="upd-badge" class="update-badge">
+                <i class="fa-solid fa-circle-notch fa-spin"></i>
+                <span id="upd-badge-text">Memeriksa...</span>
+              </div>
+            </div>
+            <div class="metric-footer">
+              <a id="upd-remote-url" href="#" target="_blank" rel="noopener" style="color: var(--text-dim); font-size: 0.77rem; word-break: break-all; text-decoration: none;" title="Buka di GitHub">—</a>
+            </div>
+          </div>
+
+        </section>
+
+        <!-- Pull Update Panel (shown only when update available) -->
+        <section class="section-container" id="upd-pull-panel" style="margin-top: 20px; display: none;">
+          <div class="section-header">
+            <h2><i class="fa-brands fa-github"></i> Update Tersedia — Pull dari GitHub</h2>
+            <div class="terminal-actions">
+              <label style="display: flex; align-items: center; gap: 8px; font-size: 0.87rem; cursor: pointer; color: var(--text-dim);">
+                <input type="checkbox" id="upd-install-deps" style="width: auto;">
+                Jalankan <code style="font-size:0.8rem;">npm install</code> setelah pull
+              </label>
+              <button class="btn btn-primary" id="btn-run-pull" onclick="runGitPull()">
+                <i class="fa-brands fa-github"></i> Pull dari GitHub Sekarang
+              </button>
+            </div>
+          </div>
+
+          <div class="updater-pending-box">
+            <div class="updater-section-label">
+              <i class="fa-solid fa-cloud-arrow-down"></i>
+              Commit baru yang akan di-pull ke server:
+            </div>
+            <div id="upd-remote-commits" class="commit-list"></div>
+          </div>
+
+          <!-- Pull Output Log -->
+          <div id="upd-pull-log" class="pull-log-box" style="display: none;">
+            <div class="pull-log-header">
+              <i class="fa-solid fa-terminal"></i> Output Git Pull
+            </div>
+            <pre id="upd-pull-log-content" class="pull-log-content"></pre>
+          </div>
+        </section>
+
+        <!-- Up to Date Panel -->
+        <div id="upd-noupdate-panel" class="updater-uptodate-box" style="display: none;">
+          <i class="fa-solid fa-circle-check" style="font-size: 2.5rem; color: #34d399; margin-bottom: 12px;"></i>
+          <div style="font-size: 1.1rem; font-weight: 700; color: #f8fafc;">Versi sudah terbaru!</div>
+          <div style="font-size: 0.88rem; color: var(--text-dim); margin-top: 6px;">Tidak ada commit baru di GitHub yang perlu di-pull.</div>
+        </div>
+
+        <!-- Recent Local Commits -->
+        <section class="section-container" style="margin-top: 20px;">
+          <div class="section-header">
+            <h2><i class="fa-solid fa-clock-rotate-left"></i> Riwayat Commit Lokal (5 Terbaru)</h2>
+            <div class="terminal-actions">
+              <button class="btn btn-sm btn-secondary" id="btn-check-update" onclick="checkForUpdates()">
+                <i class="fa-solid fa-rotate"></i> Cek Update
+              </button>
+            </div>
+          </div>
+          <div id="upd-local-commits" class="commit-list"></div>
+        </section>
+
+        <!-- Git Repository & Token Configuration -->
+        <section class="section-container" style="margin-top: 20px;">
+          <div class="section-header">
+            <h2><i class="fa-solid fa-sliders"></i> Konfigurasi Git Repository &amp; Access Token</h2>
+          </div>
+          <div style="background: rgba(15, 23, 42, 0.6); border: 1px solid var(--border-color); border-radius: var(--radius-md); padding: 20px;">
+            <div class="form-group">
+              <label for="cfg-git-repo" style="font-weight: 600; color: var(--text-main); display: flex; align-items: center; gap: 8px;">
+                <i class="fa-brands fa-github"></i> Git Repo Address (URL Repository GitHub):
+              </label>
+              <input type="text" id="cfg-git-repo" class="form-control font-mono" placeholder="https://github.com/BintangXD112/clvmusicbot">
+              <small style="color: var(--text-dim); margin-top: 4px; display: block;">
+                GitHub Repo to clone / pull. Contoh: <code>https://github.com/BintangXD112/clvmusicbot</code>
+              </small>
+            </div>
+
+            <div class="form-grid" style="margin-top: 14px;">
+              <div class="form-group">
+                <label for="cfg-git-branch" style="font-weight: 600; color: var(--text-main); display: flex; align-items: center; gap: 8px;">
+                  <i class="fa-solid fa-code-branch"></i> Install Branch:
+                </label>
+                <input type="text" id="cfg-git-branch" class="form-control font-mono" placeholder="main">
+                <small style="color: var(--text-dim); margin-top: 4px; display: block;">
+                  Nama branch GitHub yang ingin digunakan (default: <code>main</code>).
+                </small>
+              </div>
+
+              <div class="form-group">
+                <label for="cfg-git-token" style="font-weight: 600; color: var(--text-main); display: flex; align-items: center; gap: 8px;">
+                  <i class="fa-solid fa-key"></i> Git Access Token (Personal Access Token):
+                </label>
+                <div style="position: relative; display: flex; align-items: center;">
+                  <input type="password" id="cfg-git-token" class="form-control font-mono" placeholder="ghp_xxxxxxxxxxxxxxxxxxxx (kosongkan jika tidak diubah)">
+                  <button type="button" class="btn btn-sm btn-secondary" onclick="toggleGitTokenVisibility()" style="position: absolute; right: 8px; padding: 4px 8px;" title="Tampilkan/Sembunyikan Token">
+                    <i class="fa-solid fa-eye" id="git-token-eye"></i>
+                  </button>
+                </div>
+                <small style="color: var(--text-dim); margin-top: 4px; display: block;">
+                  Personal Access Token GitHub untuk autentikasi aman tanpa password. Buat di <a href="https://github.com/settings/tokens" target="_blank" rel="noopener" style="color: #38bdf8; text-decoration: underline;">GitHub Tokens</a>.
+                </small>
+              </div>
+            </div>
+
+            <div style="display: flex; justify-content: flex-end; gap: 10px; margin-top: 18px;">
+              <button class="btn btn-primary" onclick="saveGitConfig()">
+                <i class="fa-solid fa-save"></i> Simpan Konfigurasi Git
+              </button>
+            </div>
+          </div>
+        </section>
+
       </div>
     </main>
   </div>
@@ -583,6 +764,7 @@
   <script src="js/ui/settings.js?v=20260822"></script>
   <script src="js/ui/bulk.js?v=20260822"></script>
   <script src="js/ui/access.js?v=20260822"></script>
+  <script src="js/ui/updater.js?v=20260823"></script>
   <script src="js/sse.js?v=20260822"></script>
   <script src="app.js?v=20260822"></script>
 </body>

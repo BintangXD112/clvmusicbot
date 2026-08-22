@@ -8,3 +8,6 @@ bots.json
 .access_logs.json
 bot.rar
 
+# Desktop app build output
+dist/
+*.exe

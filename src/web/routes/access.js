@@ -51,8 +51,8 @@ router.post('/settings', requireAuth, (req, res) => {
 
 // GET /api/access/logs — Ambil daftar HTTP access logs
 router.get('/logs', requireAuth, (req, res) => {
-  const { search, status, limit } = req.query;
-  const logs = getAccessLogs({ search, status, limit });
+  const { search, status, clientType, limit } = req.query;
+  const logs = getAccessLogs({ search, status, clientType, limit });
   res.json({
     total: logs.length,
     logs

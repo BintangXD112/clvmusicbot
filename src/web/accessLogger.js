@@ -54,10 +54,75 @@ function saveLogsToDisk() {
 loadLogsFromDisk();
 
 /**
+ * Deteksi informasi klien (Desktop App, Web Browser, Mobile, API) dari User-Agent & Headers.
+ * @param {string} userAgent
+ * @param {string} clientHeader
+ * @returns {{ clientType: string, clientLabel: string, clientIcon: string, os: string }}
+ */
+function detectClientInfo(userAgent = '', clientHeader = '') {
+  const ua = String(userAgent || '');
+  const ch = String(clientHeader || '').toLowerCase();
+
+  // 1. Cek OS
+  let os = 'Unknown';
+  if (/Windows NT/i.test(ua)) os = 'Windows';
+  else if (/Macintosh|Mac OS X/i.test(ua)) os = 'macOS';
+  else if (/Linux/i.test(ua) && !/Android/i.test(ua)) os = 'Linux';
+  else if (/Android/i.test(ua)) os = 'Android';
+  else if (/iPhone|iPad|iPod/i.test(ua)) os = 'iOS';
+
+  // 2. Cek Desktop App (Electron / Header / Custom UA)
+  if (ch === 'desktop' || ua.includes('CLVMusicBot-Desktop') || (ua.includes('Electron') && !ua.includes('Postman'))) {
+    return {
+      clientType: 'desktop',
+      clientLabel: 'Desktop App',
+      clientIcon: 'fa-desktop',
+      os
+    };
+  }
+
+  // 3. Cek Mobile Browser
+  if (/Mobile|Android|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(ua)) {
+    return {
+      clientType: 'mobile',
+      clientLabel: 'Mobile Web',
+      clientIcon: 'fa-mobile-screen-button',
+      os
+    };
+  }
+
+  // 4. Cek Web Browser Desktop biasa
+  if (/Chrome|Safari|Firefox|Edge|Edg|Opera|OPR/i.test(ua)) {
+    let browserName = 'Web Browser';
+    if (/Edg/i.test(ua)) browserName = 'Edge';
+    else if (/Chrome/i.test(ua)) browserName = 'Chrome';
+    else if (/Firefox/i.test(ua)) browserName = 'Firefox';
+    else if (/Safari/i.test(ua)) browserName = 'Safari';
+
+    return {
+      clientType: 'web',
+      clientLabel: browserName,
+      clientIcon: 'fa-globe',
+      os
+    };
+  }
+
+  // 5. Fallback API / Bot / Script
+  return {
+    clientType: 'api',
+    clientLabel: 'API / Bot',
+    clientIcon: 'fa-bolt',
+    os
+  };
+}
+
+/**
  * Tambahkan entry access log baru.
  * @param {Object} logData
  */
 function addAccessLog(logData) {
+  const clientInfo = detectClientInfo(logData.userAgent, logData.clientPlatform);
+
   const entry = {
     id: Date.now() + Math.random().toString(36).substring(2, 7),
     timestamp: new Date().toISOString(),
@@ -68,6 +133,10 @@ function addAccessLog(logData) {
     status: logData.status || 200,
     durationMs: logData.durationMs || 0,
     userAgent: logData.userAgent || 'Unknown',
+    clientType: logData.clientType || clientInfo.clientType,
+    clientLabel: logData.clientLabel || clientInfo.clientLabel,
+    clientIcon: logData.clientIcon || clientInfo.clientIcon,
+    os: logData.os || clientInfo.os,
     allowed: logData.allowed !== undefined ? logData.allowed : true,
     reason: logData.reason || ''
   };
@@ -108,6 +177,7 @@ function accessLoggerMiddleware(req, res, next) {
   const method = req.method;
   const path = req.originalUrl || req.url;
   const userAgent = req.headers['user-agent'] || 'Unknown';
+  const clientPlatform = req.headers['x-client-platform'] || '';
 
   res.on('finish', () => {
     const durationMs = Date.now() - startTime;
@@ -122,6 +192,7 @@ function accessLoggerMiddleware(req, res, next) {
       status: res.statusCode,
       durationMs,
       userAgent,
+      clientPlatform,
       allowed: !isBlocked,
       reason
     });
@@ -139,10 +210,12 @@ function getAccessLogs(filters = {}) {
   if (filters.search) {
     const query = String(filters.search).toLowerCase();
     result = result.filter(item =>
-      item.ip.toLowerCase().includes(query) ||
-      item.host.toLowerCase().includes(query) ||
-      item.path.toLowerCase().includes(query) ||
-      item.userAgent.toLowerCase().includes(query)
+      (item.ip && item.ip.toLowerCase().includes(query)) ||
+      (item.host && item.host.toLowerCase().includes(query)) ||
+      (item.path && item.path.toLowerCase().includes(query)) ||
+      (item.userAgent && item.userAgent.toLowerCase().includes(query)) ||
+      (item.clientLabel && item.clientLabel.toLowerCase().includes(query)) ||
+      (item.os && item.os.toLowerCase().includes(query))
     );
   }
 
@@ -152,6 +225,10 @@ function getAccessLogs(filters = {}) {
     else if (filters.status === '403') result = result.filter(i => i.status === 403 || !i.allowed);
     else if (filters.status === '4xx') result = result.filter(i => i.status >= 400 && i.status < 500 && i.status !== 403);
     else if (filters.status === '5xx') result = result.filter(i => i.status >= 500);
+  }
+
+  if (filters.clientType && filters.clientType !== 'all') {
+    result = result.filter(i => i.clientType === filters.clientType);
   }
 
   const limit = Number(filters.limit) || 200;
@@ -177,5 +254,6 @@ module.exports = {
   addAccessLog,
   getAccessLogs,
   clearAccessLogs,
-  accessLoggerEmitter
+  accessLoggerEmitter,
+  detectClientInfo
 };

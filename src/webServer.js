@@ -14,6 +14,7 @@ const authRouter                       = require('./web/routes/auth');
 const createBotsRouter                 = require('./web/routes/bots');
 const createSystemRouter               = require('./web/routes/system');
 const createSSERouter                  = require('./web/sse');
+const updaterRouter                    = require('./web/routes/updater');
 
 // Safe imports dengan fallback untuk mencegah crash jika file baru belum ter-pull di server
 let accessLoggerMiddleware = (req, res, next) => next();
@@ -87,6 +88,9 @@ function createWebServer(orchestrator) {
 
   // Mount SSE Live Stream API
   app.use('/api', createSSERouter(orchestrator));
+
+  // Mount Version Control / GitHub Updater API
+  app.use('/api/update', updaterRouter);
 
   // ── Start HTTP Server ──────────────────────────────────────────────────────
 

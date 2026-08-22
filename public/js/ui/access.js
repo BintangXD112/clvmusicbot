@@ -5,6 +5,7 @@
 
 var accessLogEntries = [];
 var accessStatusFilter = 'ALL';
+var accessClientFilter = 'all';
 var accessSearchQuery = '';
 var accessPollInterval = null;
 
@@ -102,6 +103,7 @@ async function fetchAccessLogs() {
     let url = '/api/access/logs?limit=300';
     if (accessSearchQuery) url += `&search=${encodeURIComponent(accessSearchQuery)}`;
     if (accessStatusFilter && accessStatusFilter !== 'ALL') url += `&status=${encodeURIComponent(accessStatusFilter)}`;
+    if (accessClientFilter && accessClientFilter !== 'all') url += `&clientType=${encodeURIComponent(accessClientFilter)}`;
 
     const res = await fetch(url);
     if (!res.ok) return;
@@ -145,7 +147,7 @@ function renderAccessLogs() {
   if (accessLogEntries.length === 0) {
     tbody.innerHTML = `
       <tr>
-        <td colspan="7" style="text-align: center; color: var(--text-muted); padding: 24px;">
+        <td colspan="8" style="text-align: center; color: var(--text-muted); padding: 24px;">
           <i class="fa-solid fa-folder-open" style="font-size: 1.5rem; margin-bottom: 8px; display: block;"></i>
           Belum ada data access log yang tercatat.
         </td>
@@ -174,9 +176,30 @@ function renderAccessLogs() {
       ? '<span class="badge badge-success"><i class="fa-solid fa-circle-check"></i> Allowed</span>'
       : '<span class="badge badge-danger"><i class="fa-solid fa-ban"></i> Blocked (403)</span>';
 
+    // Client badge & icon
+    let clientBadge = '';
+    const type = item.clientType || 'web';
+    const label = safeEscape(item.clientLabel || 'Web');
+    const icon = safeEscape(item.clientIcon || (type === 'desktop' ? 'fa-desktop' : type === 'mobile' ? 'fa-mobile-screen-button' : 'fa-globe'));
+
+    if (type === 'desktop') {
+      clientBadge = `<span class="badge badge-desktop" title="Akses via Native Desktop Client"><i class="fa-solid ${icon}"></i> ${label}</span>`;
+    } else if (type === 'mobile') {
+      clientBadge = `<span class="badge badge-mobile" title="Akses via Mobile Browser"><i class="fa-solid ${icon}"></i> ${label}</span>`;
+    } else if (type === 'api') {
+      clientBadge = `<span class="badge badge-api" title="Akses via API / Script"><i class="fa-solid ${icon}"></i> ${label}</span>`;
+    } else {
+      clientBadge = `<span class="badge badge-web" title="Akses via Web Browser"><i class="fa-solid ${icon}"></i> ${label}</span>`;
+    }
+
+    const osBadge = item.os && item.os !== 'Unknown'
+      ? `<span class="badge-os"><i class="fa-solid fa-microchip"></i> ${safeEscape(item.os)}</span>`
+      : '';
+
     html += `
       <tr>
         <td class="font-mono text-dim" style="white-space: nowrap;">${timeStr}</td>
+        <td style="white-space: nowrap;">${clientBadge}</td>
         <td class="font-mono" style="font-weight: 500;">${safeEscape(item.ip)}</td>
         <td style="max-width: 150px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" title="${safeEscape(item.host)}">${safeEscape(item.host)}</td>
         <td>
@@ -187,8 +210,8 @@ function renderAccessLogs() {
           <span class="badge ${statusBadgeClass}">${item.status}</span>
         </td>
         <td>${accessStateBadge}</td>
-        <td style="max-width: 200px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--text-dim); font-size: 0.78rem;" title="${safeEscape(item.userAgent)}">
-          ${safeEscape(item.userAgent)}
+        <td style="max-width: 220px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--text-dim); font-size: 0.78rem;" title="${safeEscape(item.userAgent)}">
+          ${osBadge}${safeEscape(item.userAgent)}
         </td>
       </tr>
     `;
@@ -198,11 +221,22 @@ function renderAccessLogs() {
 }
 
 /**
- * Filter status access log.
+ * Filter status access log (All, 2xx, 403, 4xx, 5xx).
  */
 function setAccessStatusFilter(status, btnElement) {
   accessStatusFilter = status;
   const buttons = document.querySelectorAll('.access-filter-btn');
+  buttons.forEach(b => b.classList.remove('active'));
+  if (btnElement) btnElement.classList.add('active');
+  fetchAccessLogs();
+}
+
+/**
+ * Filter tipe klien access log (Semua, Desktop, Web, Mobile).
+ */
+function setAccessClientFilter(clientType, btnElement) {
+  accessClientFilter = clientType;
+  const buttons = document.querySelectorAll('.access-client-btn');
   buttons.forEach(b => b.classList.remove('active'));
   if (btnElement) btnElement.classList.add('active');
   fetchAccessLogs();
@@ -248,9 +282,12 @@ function exportAccessLogs(format = 'json') {
 
   if (format === 'csv') {
     mimeType = 'text/csv;charset=utf-8;';
-    const headers = ['Timestamp', 'IP', 'Host', 'Method', 'Path', 'Status', 'Allowed', 'Duration(ms)', 'UserAgent'];
+    const headers = ['Timestamp', 'ClientType', 'ClientLabel', 'OS', 'IP', 'Host', 'Method', 'Path', 'Status', 'Allowed', 'Duration(ms)', 'UserAgent'];
     const rows = accessLogEntries.map(e => [
       `"${e.timestamp}"`,
+      `"${e.clientType || ''}"`,
+      `"${e.clientLabel || ''}"`,
+      `"${e.os || ''}"`,
       `"${e.ip}"`,
       `"${e.host}"`,
       `"${e.method}"`,
